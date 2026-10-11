@@ -31,14 +31,14 @@ Open the loopback URL printed in the terminal, normally `http://127.0.0.1:3000`.
 
 Seeding creates fictional accounts using the password you selected and preserves existing records. Choose an account on the sign-in screen:
 
-| Role | University ID Number |
-| --- | --- |
-| Student | `2024-0001` or `2024-0002` |
-| CFO staff | `CFO-001` |
-| Department representative | `DEP-001` |
-| Facility approver | `APR-001` |
-| Administrator | `ADM-001` |
-| Aggregate report viewer | `VIEW-001` |
+| Role                      | University ID Number       |
+| ------------------------- | -------------------------- |
+| Student                   | `2024-0001` or `2024-0002` |
+| CFO staff                 | `CFO-001`                  |
+| Department representative | `DEP-001`                  |
+| Facility approver         | `APR-001`                  |
+| Administrator             | `ADM-001`                  |
+| Aggregate report viewer   | `VIEW-001`                 |
 
 ## Commands
 
@@ -53,6 +53,16 @@ Seeding creates fictional accounts using the password you selected and preserves
 Local records are created in `data/cfo.json`; uploads are created in `private-uploads/`. Neither is distributed in this repository. Uploaded files are served only through authenticated, permission-checked routes. Passwords use salted scrypt, session tokens are hashed, and important actions are recorded in the audit history.
 
 Students access their own submissions. CFO staff manage office workflows; administrators manage accounts. Department representatives request facilities, approvers decide requests, and viewers receive aggregate reports. Approved facility overlaps are blocked; pending conflicts remain for authorized review.
+
+## Workspace improvements
+
+The workspace has a collapsible desktop menu, optional dark mode, mobile navigation, field-level errors, confirmation for consequential changes, and unsaved-change warnings. Search, filters, and pagination stay in the page URL so refresh and return navigation preserve the selected view.
+
+Activity and facility forms and announcements can recover drafts in the same browser tab for two hours. Drafts clear after saving, discarding, or signing out. Files, passwords, and profile information are not stored in drafts. Close shared-computer tabs after use.
+
+Staff can define optional year/section targeting and named document requirements, review individual documents, keep replaced versions, assign participant groups and facilitators, select an activity for attendance, and export reports using the displayed filters. Facility availability shows pending/approved time slots without exposing other request purposes. Administrators can configure facility names and publish an approved PNG/JPEG office logo; that branding image is public. Student documents remain private.
+
+These are provisional pilot rules: current documents must be accepted before registration acceptance, each configured requirement needs an accepted document, targeting uses the submitted profile, and groups/facilitators are operational labels. Editing requirements does not retroactively revoke accepted registrations. Removing a facility from new-request choices preserves existing bookings. University confirmation is still required for these rules and any exceptions.
 
 ## Scope and limitations
 
