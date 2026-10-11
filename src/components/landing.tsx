@@ -171,8 +171,8 @@ export function Landing() {
           </div>
           <div className="hero-visual">
             <Image
-              src="/images/formation.jpg"
-              alt="An illustrative landscape inviting a quiet moment of reflection"
+              src="/images/chapel.webp"
+              alt="Illustrative chapel with wooden pews, a simple cross, and warm morning light"
               fill
               priority
               sizes="(max-width: 800px) 100vw, 48vw"
@@ -186,7 +186,7 @@ export function Landing() {
                 in the moments.
               </p>
             </div>
-            <span className="photo-disclaimer">Illustrative photograph</span>
+            <span className="photo-disclaimer">Illustrative image</span>
           </div>
         </section>
         <div className="formation-marquee" aria-label="Formation programs">
@@ -307,11 +307,12 @@ export function Landing() {
         <section className="guidance-section">
           <div className="guidance-image">
             <Image
-              src="/images/reflection.jpg"
-              alt="An illustrative natural scene for contemplation"
+              src="/images/reflection.webp"
+              alt="Illustrative devotional book and wooden rosary beside a chapel window"
               fill
               sizes="(max-width: 800px) 100vw, 35vw"
             />
+            <span className="photo-disclaimer">Illustrative image</span>
           </div>
           <div className="guidance-copy">
             <span className="tiny-overline">THOUGHTFUL BY DESIGN</span>

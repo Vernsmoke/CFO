@@ -74,4 +74,4 @@ The repository includes application source, required assets, configuration, a de
 
 ## Asset sources
 
-[Cabinet Grotesk by Fontshare](https://www.fontshare.com/fonts/cabinet-grotesk), [Lucide icons](https://lucide.dev/), and [Lorem Picsum photographs](https://picsum.photos/). Photographs and branding are illustrative; they are not official university assets.
+[Cabinet Grotesk by Fontshare](https://www.fontshare.com/fonts/cabinet-grotesk) and [Lucide icons](https://lucide.dev/). Chapel, devotional-book/rosary, and retreat-garden images are AI-generated illustrative assets, stored locally as optimized WebP files. They depict fictional settings, not University of La Salette facilities or actual events. The interface uses walnut brown, parchment cream, and muted bronze, with a matching warm dark mode. Status colors retain their distinct meanings.

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, MapPin, Clock3, FileCheck2, Inbox } from "lucide-react";
 import type { Activity, Registration } from "@/lib/types";
+import { ActivityArtwork } from "./activity-artwork";
 export function formatDate(date: string, short = false) {
   return new Intl.DateTimeFormat("en-PH", {
     timeZone: "Asia/Manila",
@@ -108,16 +109,13 @@ export function ActivityTile({
   const date = new Date(`${activity.date}T12:00:00+08:00`);
   return (
     <Link href="/dashboard/activities" className={`activity-tile tile-${index % 3}`}>
-      <div className="activity-art">
-        <div className="art-arch" />
-        <div className="art-circle" />
-        <div className="art-line" />
+      <ActivityArtwork type={activity.type}>
         <span className="activity-type">{activity.type}</span>
         <span className="date-square">
           <strong>{date.getDate()}</strong>
           <small>{date.toLocaleString("en", { month: "short" })}</small>
         </span>
-      </div>
+      </ActivityArtwork>
       <div className="activity-tile-content">
         <div className="tile-status">
           {registration ? (

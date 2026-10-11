@@ -30,6 +30,7 @@ import { FacilityAvailability } from "@/components/facility-availability";
 import { AttendancePicker } from "@/components/attendance-picker";
 import { ReportFilters } from "@/components/report-filters";
 import { OfficeSettings } from "@/components/office-settings";
+import { ActivityArtwork } from "@/components/activity-artwork";
 
 const access: Record<string, Role[]> = {
   activities: ["student", "staff"],
@@ -160,7 +161,7 @@ export default async function SectionPage({
           filters={["Retreat", "Recollection", "Liturgy", "Formation program"]}
           dates
           dimensions={staff ? [departmentFilter] : []}
-          items={activities.map((activity, index) => {
+          items={activities.map((activity) => {
             const registration = db.registrations.find(
               (r) =>
                 r.activityId === activity.id && r.userId === user.id && r.status !== "Withdrawn",
@@ -176,11 +177,7 @@ export default async function SectionPage({
               values: { department: activity.department },
               content: (
                 <article className="activity-detail surface">
-                  <div className={`detail-art tile-${index % 3}`}>
-                    <div className="art-arch" />
-                    <div className="art-circle" />
-                    <span>{activity.type}</span>
-                  </div>
+                  <ActivityArtwork type={activity.type} detail />
                   <div className="activity-detail-body">
                     <div className="between">
                       <span className="tiny-overline">{activity.type}</span>

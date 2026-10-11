@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { currentUser } from "@/lib/auth";
@@ -11,6 +12,14 @@ export default async function LoginPage() {
   return (
     <main className="login-page">
       <section className="login-story">
+        <Image
+          className="login-story-image"
+          src="/images/chapel.webp"
+          alt=""
+          fill
+          preload
+          sizes="(max-width: 800px) 100vw, 50vw"
+        />
         <Link href="/">
           <Brand light branding={db.settings} />
         </Link>
@@ -20,6 +29,7 @@ export default async function LoginPage() {
             <br />A place to belong.
           </h1>
         </div>
+        <small className="login-image-credit">Illustrative image</small>
       </section>
       <section className="login-panel">
         <Link href="/" className="back-link">
