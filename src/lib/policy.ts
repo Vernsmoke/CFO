@@ -1,4 +1,13 @@
-import type { Activity, FacilityRequest, Role, User } from "./types";
+import type {
+  Activity,
+  Database,
+  DocumentRecord,
+  FacilityRequest,
+  Profile,
+  Registration,
+  Role,
+  User,
+} from "./types";
 
 export const departments = [
   "College of Information Technology",
@@ -13,11 +22,66 @@ export function canManage(role: Role) {
 export function canViewReports(role: Role) {
   return role === "staff" || role === "viewer";
 }
-export function canSeeActivity(user: Pick<User, "role">, department: string, activity: Activity) {
+export function canSeeActivity(
+  user: Pick<User, "role">,
+  department: string,
+  activity: Activity,
+  profile?: Pick<Profile, "year" | "section">,
+) {
   return (
     user.role === "staff" ||
     (activity.status !== "Draft" &&
-      (activity.department === "All departments" || activity.department === department))
+      (activity.department === "All departments" || activity.department === department) &&
+      (!activity.years?.length || activity.years.includes(profile?.year ?? "")) &&
+      (!activity.sections?.length ||
+        activity.sections.some(
+          (section) => section.toLowerCase() === profile?.section.toLowerCase(),
+        )))
+  );
+}
+export function activeDocuments(documents: DocumentRecord[], registrationId: string) {
+  return documents.filter(
+    (document) => document.registrationId === registrationId && !document.supersededBy,
+  );
+}
+export function acceptanceProblem(activity: Activity | undefined, documents: DocumentRecord[]) {
+  if (documents.some((document) => document.status !== "Accepted"))
+    return "Review and accept each current document before accepting this registration.";
+  const missing =
+    activity?.requiredDocuments?.filter(
+      (requirement) =>
+        !documents.some(
+          (document) => document.requirement === requirement && document.status === "Accepted",
+        ),
+    ) ?? [];
+  return missing.length ? `Missing accepted documents: ${missing.join(", ")}.` : "";
+}
+export function configuredFacilities(db: Pick<Database, "settings">) {
+  return db.settings?.facilities ?? facilityNames;
+}
+export function manilaDay(value = new Date().toISOString()) {
+  return new Date(Date.parse(value) + 8 * 3600000).toISOString().slice(0, 10);
+}
+export type ReportFilters = {
+  activity?: string;
+  department?: string;
+  status?: string;
+  from?: string;
+  to?: string;
+  group?: string;
+};
+export function reportMatches(registration: Registration, db: Database, filters: ReportFilters) {
+  const activity = db.activities.find((item) => item.id === registration.activityId);
+  const profile = db.profiles.find((item) => item.userId === registration.userId);
+  const date = activity?.date ?? "";
+  return (
+    registration.status !== "Withdrawn" &&
+    (!filters.activity || registration.activityId === filters.activity) &&
+    (!filters.department || profile?.department === filters.department) &&
+    (!filters.status || registration.status === filters.status) &&
+    (!filters.group || registration.group === filters.group) &&
+    (!filters.from || date >= filters.from) &&
+    (!filters.to || date <= filters.to)
   );
 }
 export function overlaps(

@@ -30,6 +30,9 @@ export type Activity = {
   status: "Draft" | "Published" | "Postponed" | "Cancelled" | "Archived";
   capacity: number;
   createdBy: string;
+  years?: string[];
+  sections?: string[];
+  requiredDocuments?: string[];
 };
 export type Registration = {
   id: string;
@@ -38,6 +41,8 @@ export type Registration = {
   status: "Submitted" | "Under review" | "Requires correction" | "Accepted" | "Withdrawn";
   note: string;
   submittedAt: string;
+  group?: string;
+  facilitator?: string;
 };
 export type DocumentRecord = {
   id: string;
@@ -47,6 +52,11 @@ export type DocumentRecord = {
   storageName: string;
   mime: string;
   uploadedAt: string;
+  requirement?: string;
+  status?: "Pending review" | "Accepted" | "Requires correction";
+  note?: string;
+  reviewedAt?: string;
+  supersededBy?: string;
 };
 export type Attendance = { id: string; registrationId: string; timeIn: string; timeOut: string };
 export type FacilityRequest = {
@@ -96,5 +106,6 @@ export type Database = {
   notifications: Notification[];
   sessions: { tokenHash: string; userId: string; expiresAt: number }[];
   attempts: { key: string; count: number; resetAt: number }[];
+  settings?: { officeName: string; facilities: string[]; logo?: string; updatedAt?: string };
 };
-export type ActionResult = { ok: boolean; message: string };
+export type ActionResult = { ok: boolean; message: string; errors?: Record<string, string> };
