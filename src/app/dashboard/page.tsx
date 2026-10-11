@@ -31,7 +31,7 @@ export default async function DashboardPage() {
     (r) => user.role === "staff" || r.userId === user.id,
   );
   const activities = db.activities.filter(
-    (a) => canSeeActivity(user, profile?.department ?? "", a) && a.status === "Published",
+    (a) => canSeeActivity(user, profile?.department ?? "", a, profile) && a.status === "Published",
   );
   const notifications = db.notifications.filter((n) => n.userId === user.id && !n.read);
   const announcements = db.announcements.filter(
@@ -180,6 +180,23 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
+      {staff && (
+        <section className="surface staff-task-queue">
+          <h2>Needs review</h2>
+          <Link href="/dashboard/profiles?filter=Pending+verification">
+            Profiles{" "}
+            <strong>{db.profiles.filter((p) => p.status === "Pending verification").length}</strong>
+          </Link>
+          <Link href="/dashboard/submissions?filter=Submitted">
+            New submissions{" "}
+            <strong>{db.registrations.filter((r) => r.status === "Submitted").length}</strong>
+          </Link>
+          <Link href="/dashboard/submissions?filter=Under+review">
+            Under review{" "}
+            <strong>{db.registrations.filter((r) => r.status === "Under review").length}</strong>
+          </Link>
+        </section>
+      )}
       {student && registrations.some((r) => r.status === "Requires correction") && (
         <div className="attention-note">
           <span className="soft-icon amber-icon">

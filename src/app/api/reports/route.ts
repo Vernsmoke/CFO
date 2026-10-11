@@ -1,10 +1,17 @@
 import { currentUser } from "@/lib/auth";
 import { audit, mutateDb } from "@/lib/store";
-import { csvCell } from "@/lib/policy";
-export async function GET() {
+import { csvCell, reportMatches } from "@/lib/policy";
+export async function GET(request: Request) {
   const user = await currentUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
   if (user.role !== "staff") return new Response("Forbidden", { status: 403 });
+  const params = new URL(request.url).searchParams;
+  const filters = Object.fromEntries(
+    ["activity", "department", "status", "from", "to", "group"].map((key) => [
+      key,
+      params.get(key) ?? "",
+    ]),
+  );
   const csv = await mutateDb((db) => {
     const rows = [
       [
@@ -15,9 +22,17 @@ export async function GET() {
         "Submission status",
         "Time-in UTC",
         "Time-out UTC",
+        "Group",
+        "Facilitator",
       ],
     ];
-    for (const r of db.registrations.filter((r) => r.status !== "Withdrawn")) {
+    if (
+      !db.users.some(
+        (account) => account.id === user.id && account.active && account.role === "staff",
+      )
+    )
+      throw new Error("Export permission has changed.");
+    for (const r of db.registrations.filter((r) => reportMatches(r, db, filters))) {
       const student = db.users.find((u) => u.id === r.userId);
       const activity = db.activities.find((a) => a.id === r.activityId);
       const entry = db.attendance.find((a) => a.registrationId === r.id);
@@ -29,6 +44,8 @@ export async function GET() {
         r.status,
         entry?.timeIn ?? "",
         entry?.timeOut ?? "",
+        r.group ?? "",
+        r.facilitator ?? "",
       ]);
     }
     audit(
@@ -36,7 +53,7 @@ export async function GET() {
       user,
       "Student information exported",
       "participant-report",
-      `${rows.length - 1} records; CSV`,
+      `${rows.length - 1} records; CSV; Filters: ${JSON.stringify(filters)}`,
     );
     return rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
   });

@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  ArrowUpRight,
-  Download,
-  FileText,
-  ShieldCheck,
-  CalendarDays,
-  AlertTriangle,
-} from "lucide-react";
+import { ArrowUpRight, ShieldCheck, CalendarDays, AlertTriangle } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/store";
-import { canSeeActivity, conflicts, departments, facilityNames } from "@/lib/policy";
+import {
+  canSeeActivity,
+  conflicts,
+  departments,
+  configuredFacilities,
+  activeDocuments,
+  reportMatches,
+  manilaDay,
+} from "@/lib/policy";
 import {
   ActivityMetadata,
   Empty,
@@ -23,6 +24,13 @@ import { Field, Select, Textarea, WorkflowForm } from "@/components/forms";
 import { SearchList } from "@/components/search-list";
 import type { Activity, FacilityRequest, Role } from "@/lib/types";
 
+import { RecordHistory, DocumentReview } from "@/components/workflow-details";
+import { SubmissionUpload } from "@/components/submission-upload";
+import { FacilityAvailability } from "@/components/facility-availability";
+import { AttendancePicker } from "@/components/attendance-picker";
+import { ReportFilters } from "@/components/report-filters";
+import { OfficeSettings } from "@/components/office-settings";
+
 const access: Record<string, Role[]> = {
   activities: ["student", "staff"],
   submissions: ["student", "staff"],
@@ -33,24 +41,50 @@ const access: Record<string, Role[]> = {
   announcements: ["student", "staff"],
   reports: ["staff", "viewer"],
   accounts: ["admin"],
+  settings: ["admin"],
   audit: ["admin", "staff"],
   notifications: ["student", "staff", "representative", "approver", "admin", "viewer"],
 };
 function manilaInput(value: string) {
   return value ? new Date(Date.parse(value) + 8 * 60 * 60 * 1000).toISOString().slice(0, 16) : "";
 }
-export default async function SectionPage({ params }: { params: Promise<{ section: string }> }) {
+export default async function SectionPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ section: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { section } = await params;
   const user = await requireUser();
   if (!access[section]?.includes(user.role)) notFound();
   const db = await readDb();
+  const query = await searchParams;
+  const filters = Object.fromEntries(
+    ["activity", "department", "status", "from", "to", "group"].map((key) => [
+      key,
+      typeof query[key] === "string" ? query[key] : "",
+    ]),
+  );
+  const facilities = configuredFacilities(db);
+  const today = manilaDay();
+  const activityFilter = {
+    key: "activity",
+    label: "Activity",
+    options: db.activities.map((a) => ({ value: a.id, label: a.title })),
+  };
+  const departmentFilter = {
+    key: "department",
+    label: "Department",
+    options: departments.map((name) => ({ value: name, label: name })),
+  };
   const staff = user.role === "staff";
   const profile = db.profiles.find((p) => p.userId === user.id);
   const nameFor = (id: string) => db.users.find((u) => u.id === id)?.name ?? "Unknown account";
   const idFor = (id: string) => db.users.find((u) => u.id === id)?.universityId ?? "";
   if (section === "activities") {
     const activities = db.activities.filter((a) =>
-      canSeeActivity(user, profile?.department ?? "", a),
+      canSeeActivity(user, profile?.department ?? "", a, profile),
     );
     return (
       <>
@@ -67,7 +101,11 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
             <summary>
               Create a formation activity <ArrowUpRight size={18} />
             </summary>
-            <WorkflowForm intent="createActivity" label="Save activity">
+            <WorkflowForm
+              intent="createActivity"
+              label="Save activity"
+              draftKey={`${user.id}:createActivity`}
+            >
               <div className="form-grid">
                 <Field label="Activity title" name="title" />
                 <Select
@@ -92,9 +130,24 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                   max={10000}
                   value={100}
                 />
+                <Field
+                  label="Year levels (comma-separated; blank for all)"
+                  name="years"
+                  required={false}
+                />
+                <Field
+                  label="Sections (comma-separated; blank for all)"
+                  name="sections"
+                  required={false}
+                />
                 <Select label="Publication status" name="status" options={["Draft", "Published"]} />
               </div>
               <Textarea label="Description" name="description" />
+              <Textarea
+                label="Required document names (one per line; optional)"
+                name="requiredDocuments"
+                required={false}
+              />
               <Textarea
                 label="Requirements (or state that none are required)"
                 name="requirements"
@@ -105,6 +158,8 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
         <SearchList
           placeholder="Search an activity, venue, or program…"
           filters={["Retreat", "Recollection", "Liturgy", "Formation program"]}
+          dates
+          dimensions={staff ? [departmentFilter] : []}
           items={activities.map((activity, index) => {
             const registration = db.registrations.find(
               (r) =>
@@ -117,6 +172,8 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
               key: activity.id,
               search: `${activity.title} ${activity.venue} ${activity.type}`,
               filter: activity.type,
+              date: activity.date,
+              values: { department: activity.department },
               content: (
                 <article className="activity-detail surface">
                   <div className={`detail-art tile-${index % 3}`}>
@@ -130,7 +187,10 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                       <Status>{activity.status}</Status>
                     </div>
                     <h2>{activity.title}</h2>
-                    <p>{activity.description}</p>
+                    <details className="record-description">
+                      <summary>Activity details</summary>
+                      <p>{activity.description}</p>
+                    </details>
                     <ActivityMetadata activity={activity} />
                     <div className="requirement-box">
                       <strong>Prepare for your activity</strong>
@@ -140,10 +200,23 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                         participants
                       </small>
                     </div>
-                    <p className="small muted">{activity.department}</p>
+                    <p className="small muted">
+                      {activity.department}
+                      {activity.years?.length ? ` · Years ${activity.years.join(", ")}` : ""}
+                      {activity.sections?.length
+                        ? ` · Sections ${activity.sections.join(", ")}`
+                        : ""}
+                    </p>
+                    {user.role === "student" && (
+                      <p className="deadline-indicator">
+                        {activity.deadline < today
+                          ? "Registration deadline passed"
+                          : `Register by ${formatDate(activity.deadline)}`}
+                      </p>
+                    )}
                     {staff ? (
                       <>
-                        <ActivityEditForm activity={activity} />
+                        <ActivityEditForm activity={activity} userId={user.id} />
                         <div className="inline-actions">
                           <WorkflowForm
                             intent="activityStatus"
@@ -174,7 +247,9 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                           <ArrowUpRight size={16} />
                         </Link>
                       </div>
-                    ) : activity.status === "Published" ? (
+                    ) : activity.status === "Published" &&
+                      activity.deadline >= today &&
+                      count < activity.capacity ? (
                       <WorkflowForm
                         intent="register"
                         id={activity.id}
@@ -248,10 +323,12 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
         <SearchList
           placeholder="Search student name, ID Number, or department…"
           filters={["Pending verification", "Verified", "Correction requested"]}
+          dimensions={[departmentFilter]}
           items={db.profiles.map((p) => ({
             key: p.userId,
             search: `${nameFor(p.userId)} ${idFor(p.userId)} ${p.department}`,
             filter: p.status,
+            values: { department: p.department },
             content: (
               <article className="surface record-card">
                 <div className="record-top">
@@ -310,6 +387,8 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
         </p>
         <SearchList
           filters={["Submitted", "Under review", "Requires correction", "Accepted", "Withdrawn"]}
+          dimensions={staff ? [activityFilter, departmentFilter] : []}
+          dates
           placeholder={
             staff ? "Search student, reference, or activity…" : "Search reference or activity…"
           }
@@ -320,6 +399,11 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
               key: r.id,
               search: `${r.id} ${activity?.title} ${staff ? nameFor(r.userId) : ""}`,
               filter: r.status,
+              date: manilaDay(r.submittedAt),
+              values: {
+                activity: r.activityId,
+                department: db.profiles.find((p) => p.userId === r.userId)?.department ?? "",
+              },
               content: (
                 <article className="surface record-card">
                   <div className="record-top">
@@ -346,21 +430,29 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                     <h3>
                       Supporting documents <span>{documents.length}</span>
                     </h3>
-                    {documents.map((d) => (
-                      <a
-                        href={`/api/documents/${d.id}`}
-                        target="_blank"
-                        rel="noreferrer"
+                    {activeDocuments(documents, r.id).map((d) => (
+                      <DocumentReview
                         key={d.id}
-                      >
-                        <FileText size={18} />
-                        <span>
-                          {d.filename}
-                          <small>{formatDate(d.uploadedAt, true)}</small>
-                        </span>
-                        <Download size={16} />
-                      </a>
+                        document={d}
+                        staff={staff}
+                        editable={r.status !== "Withdrawn"}
+                      />
                     ))}
+                    {documents.some((d) => d.supersededBy) && (
+                      <details className="record-history">
+                        <summary>Previous versions</summary>
+                        {documents
+                          .filter((d) => d.supersededBy)
+                          .map((d) => (
+                            <DocumentReview
+                              key={d.id}
+                              document={d}
+                              staff={false}
+                              editable={false}
+                            />
+                          ))}
+                      </details>
+                    )}
                     {!documents.length && (
                       <p className="small muted">No supporting documents uploaded.</p>
                     )}
@@ -384,19 +476,15 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                     </WorkflowForm>
                   ) : !staff && !["Accepted", "Withdrawn"].includes(r.status) ? (
                     <>
-                      <WorkflowForm intent="upload" id={r.id} label="Upload and submit for review">
-                        <label className="upload-field">
-                          <FileText size={25} />
-                          <span>Choose a supporting document</span>
-                          <small>PDF, PNG, or JPEG · Maximum 5 MB</small>
-                          <input
-                            name="file"
-                            type="file"
-                            accept="application/pdf,image/png,image/jpeg"
-                            required
-                          />
-                        </label>
-                      </WorkflowForm>
+                      <SubmissionUpload
+                        registrationId={r.id}
+                        requirements={activity?.requiredDocuments ?? []}
+                        documents={activeDocuments(documents, r.id).map((d) => ({
+                          id: d.id,
+                          filename: d.filename,
+                          requirement: d.requirement,
+                        }))}
+                      />
                       <details className="withdraw-details">
                         <summary>Withdraw this registration</summary>
                         <p className="small muted">
@@ -412,6 +500,11 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                       </details>
                     </>
                   ) : null}
+                  <RecordHistory
+                    events={db.audit.filter((event) => event.target === r.id)}
+                    staff={staff}
+                    users={staff ? db.users : []}
+                  />
                 </article>
               ),
             };
@@ -421,7 +514,15 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
     );
   }
   if (section === "attendance") {
-    const registrations = db.registrations.filter((r) => r.status !== "Withdrawn");
+    const selectedActivity =
+      typeof query.activity === "string"
+        ? query.activity
+        : (db.activities.find((a) => a.status === "Published")?.id ?? "All");
+    const registrations = db.registrations.filter(
+      (r) =>
+        r.status !== "Withdrawn" &&
+        (selectedActivity === "All" || r.activityId === selectedActivity),
+    );
     return (
       <>
         <PageHeading
@@ -433,14 +534,42 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
           Time-in and time-out record checkpoints, not continuous participation. All times are
           Philippine time.
         </p>
+        <AttendancePicker
+          activities={db.activities.map((a) => ({ id: a.id, title: a.title }))}
+          selected={selectedActivity}
+        />
         <SearchList
           placeholder="Search participant, University ID, or activity…"
+          filters={["Not recorded", "Time-in recorded", "Time-out recorded"]}
+          dimensions={[
+            departmentFilter,
+            {
+              key: "group",
+              label: "Participant group",
+              options: [
+                ...new Set(
+                  registrations
+                    .map((r) => r.group)
+                    .filter((value): value is string => Boolean(value)),
+                ),
+              ].map((value) => ({ value, label: value })),
+            },
+          ]}
           items={registrations.map((r) => {
             const a = db.activities.find((a) => a.id === r.activityId);
             const entry = db.attendance.find((e) => e.registrationId === r.id);
             return {
               key: r.id,
-              search: `${nameFor(r.userId)} ${idFor(r.userId)} ${a?.title}`,
+              search: `${nameFor(r.userId)} ${idFor(r.userId)} ${a?.title} ${r.group ?? ""} ${r.facilitator ?? ""}`,
+              filter: entry?.timeOut
+                ? "Time-out recorded"
+                : entry?.timeIn
+                  ? "Time-in recorded"
+                  : "Not recorded",
+              values: {
+                department: db.profiles.find((p) => p.userId === r.userId)?.department ?? "",
+                group: r.group ?? "",
+              },
               content: (
                 <article className="surface record-card">
                   <div className="record-top">
@@ -476,6 +605,38 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                       </WorkflowForm>
                     )}
                   </div>
+                  <p className="attendance-outcome">
+                    {entry?.timeOut
+                      ? "Time-in and time-out recorded"
+                      : entry?.timeIn
+                        ? "Time-in recorded"
+                        : "Attendance not yet recorded"}
+                  </p>
+                  <details className="correction-details">
+                    <summary>Participant group</summary>
+                    <WorkflowForm intent="assignGroup" id={r.id} label="Save participant group">
+                      <Field label="Group" name="group" required={false} value={r.group} />
+                      <Field
+                        label="Facilitator"
+                        name="facilitator"
+                        required={false}
+                        value={r.facilitator}
+                      />
+                    </WorkflowForm>
+                  </details>
+                  <RecordHistory
+                    events={db.audit.filter(
+                      (event) =>
+                        event.target === r.id &&
+                        [
+                          "Attendance recorded",
+                          "Attendance corrected",
+                          "Participant group changed",
+                        ].includes(event.action),
+                    )}
+                    staff
+                    users={db.users}
+                  />
                   {entry && (
                     <details className="correction-details">
                       <summary>Correct attendance with a reason</summary>
@@ -531,14 +692,26 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                 : "View approved facility bookings for office coordination."
           }
         />
+        <FacilityAvailability
+          facilities={[...new Set([...facilities, ...db.facilities.map((r) => r.facility)])]}
+          bookings={db.facilities
+            .filter(
+              (r) => r.status === "Approved" || (r.status === "Pending" && user.role !== "staff"),
+            )
+            .map(({ facility, start, end, status }) => ({ facility, start, end, status }))}
+        />
         {user.role === "representative" && (
           <details className="create-panel">
             <summary>
               Request a facility <ArrowUpRight size={18} />
             </summary>
-            <WorkflowForm intent="requestFacility" label="Submit facility request">
+            <WorkflowForm
+              intent="requestFacility"
+              label="Submit facility request"
+              draftKey={`${user.id}:requestFacility`}
+            >
               <div className="form-grid">
-                <Select label="Facility" name="facility" options={facilityNames} />
+                <Select label="Facility" name="facility" options={facilities} />
                 <Field
                   label="Expected participants"
                   name="participants"
@@ -556,11 +729,24 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
         <SearchList
           filters={["Pending", "Approved", "Rejected", "Returned for correction"]}
           placeholder="Search facility or event purpose…"
+          dates
+          dimensions={[
+            {
+              key: "facility",
+              label: "Facility",
+              options: [...new Set(requests.map((r) => r.facility))].map((value) => ({
+                value,
+                label: value,
+              })),
+            },
+          ]}
           items={requests.map((r) => {
             const collision = user.role === "approver" ? conflicts(r, db.facilities) : [];
             return {
               key: r.id,
               search: `${r.facility} ${r.purpose}`,
+              date: manilaDay(r.start),
+              values: { facility: r.facility },
               filter: r.status,
               content: (
                 <article className="surface record-card">
@@ -599,7 +785,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                     </div>
                   )}
                   {user.role === "representative" && r.status === "Returned for correction" && (
-                    <FacilityCorrection request={r} />
+                    <FacilityCorrection request={r} facilities={facilities} userId={user.id} />
                   )}
                   {user.role === "approver" &&
                     ["Pending", "Returned for correction"].includes(r.status) && (
@@ -622,6 +808,11 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                         </p>
                       </WorkflowForm>
                     )}
+                  <RecordHistory
+                    events={db.audit.filter((event) => event.target === r.id)}
+                    staff={user.role === "approver"}
+                    users={user.role === "approver" ? db.users : []}
+                  />
                 </article>
               ),
             };
@@ -643,7 +834,11 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
               Publish an announcement
               <ArrowUpRight size={18} />
             </summary>
-            <WorkflowForm intent="announcement" label="Publish announcement">
+            <WorkflowForm
+              intent="announcement"
+              label="Publish announcement"
+              draftKey={`${user.id}:announcement`}
+            >
               <Field label="Title" name="title" />
               <Select
                 label="Audience"
@@ -708,7 +903,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
     );
   }
   if (section === "reports") {
-    const active = db.registrations.filter((r) => r.status !== "Withdrawn");
+    const active = db.registrations.filter((r) => reportMatches(r, db, filters));
     return (
       <>
         <PageHeading
@@ -718,14 +913,24 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
               ? "Understand participation, requirements, and attendance with authorized records."
               : "Read-only aggregate formation summaries. Individual student records are restricted."
           }
-          action={
-            staff ? (
-              <a href="/api/reports" className="button">
-                <Download size={16} />
-                Export participant CSV
-              </a>
-            ) : undefined
+        />
+        <ReportFilters
+          key={JSON.stringify(filters)}
+          activities={db.activities.map((a) => ({ id: a.id, title: a.title }))}
+          departments={departments}
+          groups={
+            staff
+              ? [
+                  ...new Set(
+                    db.registrations
+                      .map((r) => r.group)
+                      .filter((value): value is string => Boolean(value)),
+                  ),
+                ]
+              : []
           }
+          values={filters}
+          exportAllowed={staff}
         />
         <div className="report-metrics">
           {[
@@ -735,7 +940,12 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
               "Awaiting corrections",
               active.filter((r) => r.status === "Requires correction").length,
             ],
-            ["Attendance checkpoints", db.attendance.filter((a) => a.timeIn && a.timeOut).length],
+            [
+              "Attendance checkpoints",
+              db.attendance.filter(
+                (a) => a.timeIn && a.timeOut && active.some((r) => r.id === a.registrationId),
+              ).length,
+            ],
           ].map(([label, count]) => (
             <div className="surface" key={label}>
               <span>{label}</span>
@@ -757,33 +967,42 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                 </tr>
               </thead>
               <tbody>
-                {db.activities.map((a) => {
-                  const rs = active.filter((r) => r.activityId === a.id);
-                  return (
-                    <tr key={a.id}>
-                      <td>
-                        {a.title}
-                        <small>{formatDate(a.date, true)}</small>
-                      </td>
-                      <td>{rs.length}</td>
-                      <td>{rs.filter((r) => r.status === "Accepted").length}</td>
-                      <td>
-                        {
-                          db.attendance.filter(
-                            (e) => rs.some((r) => r.id === e.registrationId) && e.timeIn,
-                          ).length
-                        }
-                      </td>
-                      <td>
-                        {
-                          db.attendance.filter(
-                            (e) => rs.some((r) => r.id === e.registrationId) && e.timeOut,
-                          ).length
-                        }
-                      </td>
-                    </tr>
-                  );
-                })}
+                {db.activities
+                  .filter(
+                    (a) =>
+                      (!filters.activity || a.id === filters.activity) &&
+                      (!filters.from || a.date >= filters.from) &&
+                      (!filters.to || a.date <= filters.to) &&
+                      ((!filters.department && !filters.status && !filters.group) ||
+                        active.some((r) => r.activityId === a.id)),
+                  )
+                  .map((a) => {
+                    const rs = active.filter((r) => r.activityId === a.id);
+                    return (
+                      <tr key={a.id}>
+                        <td>
+                          {a.title}
+                          <small>{formatDate(a.date, true)}</small>
+                        </td>
+                        <td>{rs.length}</td>
+                        <td>{rs.filter((r) => r.status === "Accepted").length}</td>
+                        <td>
+                          {
+                            db.attendance.filter(
+                              (e) => rs.some((r) => r.id === e.registrationId) && e.timeIn,
+                            ).length
+                          }
+                        </td>
+                        <td>
+                          {
+                            db.attendance.filter(
+                              (e) => rs.some((r) => r.id === e.registrationId) && e.timeOut,
+                            ).length
+                          }
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
@@ -796,6 +1015,16 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
       </>
     );
   }
+  if (section === "settings")
+    return (
+      <>
+        <PageHeading
+          title="Office settings"
+          description="Use university-approved branding and facilities."
+        />
+        <OfficeSettings db={db} />
+      </>
+    );
   if (section === "accounts")
     return (
       <>
@@ -862,8 +1091,21 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
         <PageHeading title="Audit history" />
         <SearchList
           placeholder="Search action, target, or actor…"
+          dates
+          dimensions={[
+            {
+              key: "action",
+              label: "Action",
+              options: [...new Set(db.audit.map((event) => event.action))].map((value) => ({
+                value,
+                label: value,
+              })),
+            },
+          ]}
           items={db.audit.map((event) => ({
             key: event.id,
+            date: manilaDay(event.at),
+            values: { action: event.action },
             search: `${event.action} ${event.target} ${nameFor(event.actorId)}`,
             content: (
               <article className="surface audit-row">
@@ -891,11 +1133,16 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   notFound();
 }
 
-function ActivityEditForm({ activity: a }: { activity: Activity }) {
+function ActivityEditForm({ activity: a, userId }: { activity: Activity; userId: string }) {
   return (
     <details className="correction-details">
       <summary>Edit activity details</summary>
-      <WorkflowForm intent="editActivity" id={a.id} label="Save details and notify participants">
+      <WorkflowForm
+        intent="editActivity"
+        id={a.id}
+        label="Save details and notify participants"
+        draftKey={`${userId}:activity:${a.id}`}
+      >
         <input type="hidden" name="status" value="Draft" />
         <div className="form-grid">
           <Field label="Activity title" name="title" value={a.title} />
@@ -924,19 +1171,55 @@ function ActivityEditForm({ activity: a }: { activity: Activity }) {
             value={a.capacity}
           />
         </div>
+        <Field
+          label="Year levels (comma-separated; blank for all)"
+          name="years"
+          value={a.years?.join(", ")}
+          required={false}
+        />
+        <Field
+          label="Sections (comma-separated; blank for all)"
+          name="sections"
+          value={a.sections?.join(", ")}
+          required={false}
+        />
+        <Textarea
+          label="Required document names (one per line; optional)"
+          name="requiredDocuments"
+          value={a.requiredDocuments?.join("\n")}
+          required={false}
+        />
         <Textarea label="Description" name="description" value={a.description} />
         <Textarea label="Requirements" name="requirements" value={a.requirements} />
       </WorkflowForm>
     </details>
   );
 }
-function FacilityCorrection({ request: r }: { request: FacilityRequest }) {
+function FacilityCorrection({
+  request: r,
+  facilities,
+  userId,
+}: {
+  request: FacilityRequest;
+  facilities: string[];
+  userId: string;
+}) {
   return (
     <details className="correction-details">
       <summary>Correct and resubmit request</summary>
-      <WorkflowForm intent="requestFacility" id={r.id} label="Resubmit request">
+      <WorkflowForm
+        intent="requestFacility"
+        id={r.id}
+        label="Resubmit request"
+        draftKey={`${userId}:facility:${r.id}`}
+      >
         <div className="form-grid">
-          <Select label="Facility" name="facility" value={r.facility} options={facilityNames} />
+          <Select
+            label="Facility"
+            name="facility"
+            value={r.facility}
+            options={facilities.includes(r.facility) ? facilities : [r.facility, ...facilities]}
+          />
           <Field
             label="Expected participants"
             name="participants"

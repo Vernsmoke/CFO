@@ -12,15 +12,45 @@ import { hashToken, verifyPassword } from "@/lib/crypto";
 import { audit, mutateDb, notify, uploadDirectory } from "@/lib/store";
 import {
   canSeeActivity,
+  activeDocuments,
+  acceptanceProblem,
+  configuredFacilities,
   conflicts,
   departments,
-  facilityNames,
   isAllowedDocument,
 } from "@/lib/policy";
 import type { ActionResult, Activity, Role } from "@/lib/types";
 
 function text(form: FormData, key: string, max = 2000) {
-  return z.string().trim().min(1, `${key} is required.`).max(max).parse(form.get(key));
+  try {
+    return z.string().trim().min(1, `${key} is required.`).max(max).parse(form.get(key));
+  } catch (error) {
+    throw new FieldError(
+      key,
+      error instanceof z.ZodError ? error.issues[0].message : "Check this field.",
+    );
+  }
+}
+class FieldError extends Error {
+  constructor(
+    public field: string,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+function confirm(form: FormData) {
+  if (form.get("confirmed") !== "true") throw new Error("Confirm this action before continuing.");
+}
+function list(form: FormData, key: string, separator: RegExp) {
+  return [
+    ...new Set(
+      optional(form, key, 2000)
+        .split(separator)
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  ];
 }
 function optional(form: FormData, key: string, max = 2000) {
   return z
@@ -50,6 +80,7 @@ function failure(error: unknown): ActionResult {
         : error instanceof Error
           ? error.message
           : "Unable to complete this action.",
+    errors: error instanceof FieldError ? { [error.field]: error.message } : undefined,
   };
 }
 
@@ -135,11 +166,15 @@ export async function workflowAction(
       reminder: ["staff"],
       readNotifications: ["student", "staff", "representative", "approver", "admin", "viewer"],
       account: ["admin"],
+      reviewDocument: ["staff"],
+      assignGroup: ["staff"],
+      settings: ["admin"],
+      brandingLogo: ["admin"],
     };
     if (!roles[intent]?.includes(user.role))
       throw new Error("You do not have permission for this action.");
     let upload: { storageName: string; filename: string; mime: string } | undefined;
-    if (intent === "upload") {
+    if (intent === "upload" || intent === "brandingLogo") {
       const file = form.get("file");
       if (!(file instanceof File) || !file.size)
         throw new Error("Choose a PDF, PNG, or JPEG file.");
@@ -147,6 +182,8 @@ export async function workflowAction(
       const buffer = Buffer.from(await file.arrayBuffer());
       if (!isAllowedDocument(buffer, file.type))
         throw new Error("File content must be a valid PDF, PNG, or JPEG.");
+      if (intent === "brandingLogo" && (file.type === "application/pdf" || file.size > 1024 * 1024))
+        throw new Error("Use a PNG or JPEG logo no larger than 1 MB.");
       const storageName = randomUUID();
       await mkdir(uploadDirectory, { recursive: true });
       uploadedPath = path.join(uploadDirectory, storageName);
@@ -226,10 +263,32 @@ export async function workflowAction(
           status: enumValue(form, "status", ["Draft", "Published"]),
           capacity: z.coerce.number().int().min(1).max(10000).parse(form.get("capacity")),
           createdBy: user.id,
+          years: list(form, "years", /[,\n]/),
+          sections: list(form, "sections", /[,\n]/),
+          requiredDocuments: list(form, "requiredDocuments", /\n/),
         };
+        if (activity.years?.some((year) => !["1", "2", "3", "4", "5"].includes(year)))
+          throw new FieldError("years", "Use year levels 1–5, separated by commas.");
+        if ((activity.sections?.length ?? 0) > 30 || (activity.requiredDocuments?.length ?? 0) > 20)
+          throw new Error("Use at most 30 sections and 20 required documents.");
+        if (activity.sections?.some((section) => section.length > 60))
+          throw new FieldError("sections", "Keep each section name within 60 characters.");
+        if (activity.requiredDocuments?.some((requirement) => requirement.length > 200))
+          throw new FieldError(
+            "requiredDocuments",
+            "Keep each document requirement within 200 characters.",
+          );
         if (intent === "editActivity") {
           const existing = db.activities.find((a) => a.id === id);
           if (!existing) throw new Error("Activity not found.");
+          if (
+            activity.capacity <
+            db.registrations.filter((r) => r.activityId === id && r.status !== "Withdrawn").length
+          )
+            throw new FieldError(
+              "capacity",
+              "Capacity cannot be lower than the active participant count.",
+            );
           const before = JSON.stringify(existing);
           Object.assign(existing, activity, {
             id: existing.id,
@@ -255,20 +314,34 @@ export async function workflowAction(
           db.activities.push(activity);
           audit(db, user, "Activity created", activity.id, activity.title);
         }
-        return success("Activity saved.");
+        return success(
+          intent === "createActivity"
+            ? "Activity saved. Publish it when ready for registration."
+            : "Activity saved. Participants received an in-system update.",
+        );
       }
       if (intent === "activityStatus") {
         const activity = db.activities.find((a) => a.id === id);
         if (!activity) throw new Error("Activity not found.");
         const before = activity.status;
-        activity.status = enumValue(form, "status", [
+        const status = enumValue(form, "status", [
           "Draft",
           "Published",
           "Postponed",
           "Cancelled",
           "Archived",
         ]);
-        audit(db, user, "Activity status changed", id, `${before} → ${activity.status}`);
+        const reason = ["Cancelled", "Archived", "Postponed"].includes(status)
+          ? (confirm(form), text(form, "reason", 500))
+          : "";
+        activity.status = status;
+        audit(
+          db,
+          user,
+          "Activity status changed",
+          id,
+          `${before} → ${activity.status}${reason ? `; Reason: ${reason}` : ""}`,
+        );
         for (const r of db.registrations.filter(
           (r) => r.activityId === id && r.status !== "Withdrawn",
         ))
@@ -280,7 +353,7 @@ export async function workflowAction(
         const profile = db.profiles.find((p) => p.userId === user.id);
         if (
           !activity ||
-          !canSeeActivity(user, profile?.department ?? "", activity) ||
+          !canSeeActivity(user, profile?.department ?? "", activity, profile) ||
           activity.status !== "Published"
         )
           throw new Error("Registration is unavailable for this activity.");
@@ -316,20 +389,62 @@ export async function workflowAction(
         if (!registration || ["Accepted", "Withdrawn"].includes(registration.status))
           throw new Error("This registration cannot be changed. Contact the CFO.");
         if (intent === "withdraw") {
+          confirm(form);
           registration.status = "Withdrawn";
           audit(db, user, "Registration withdrawn", id);
           return success("Registration withdrawn.");
         }
         if (!upload) throw new Error("No upload available.");
+        const documentId = randomUUID();
+        const replacesId = optional(form, "replacesId", 100);
+        const previous = replacesId
+          ? db.documents.find(
+              (d) =>
+                d.id === replacesId &&
+                d.registrationId === id &&
+                d.userId === user.id &&
+                !d.supersededBy,
+            )
+          : undefined;
+        if (replacesId && !previous)
+          throw new Error("The document selected for replacement is unavailable.");
+        const requirement = optional(form, "requirement", 200);
+        const activity = db.activities.find((a) => a.id === registration.activityId);
+        if (
+          activity?.requiredDocuments?.length &&
+          !activity.requiredDocuments.includes(requirement)
+        )
+          throw new FieldError("requirement", "Choose the required document this upload supports.");
+        if (previous && (previous.requirement ?? "") !== requirement)
+          throw new Error("A replacement must support the same requirement.");
+        if (
+          requirement &&
+          activeDocuments(db.documents, id).some(
+            (d) => d.requirement === requirement && d.id !== replacesId,
+          )
+        )
+          throw new Error(
+            "Replace the existing document for this requirement instead of uploading a duplicate.",
+          );
+        if (previous) previous.supersededBy = documentId;
         db.documents.push({
           ...upload,
-          id: randomUUID(),
+          id: documentId,
           registrationId: id,
           userId: user.id,
           uploadedAt: now,
+          requirement,
+          status: "Pending review",
+          note: "",
         });
         registration.status = "Submitted";
-        audit(db, user, "Document uploaded", id, upload.filename);
+        audit(
+          db,
+          user,
+          "Document uploaded",
+          id,
+          `${upload.filename}${previous ? `; Replaces: ${previous.id}` : ""}`,
+        );
         return success("Document uploaded securely and submission returned for review.");
       }
       if (intent === "review") {
@@ -342,12 +457,59 @@ export async function workflowAction(
           "Accepted",
         ]);
         const note = status === "Requires correction" ? text(form, "note") : optional(form, "note");
+        if (status === "Accepted") {
+          const problem = acceptanceProblem(
+            db.activities.find((a) => a.id === registration.activityId),
+            activeDocuments(db.documents, id),
+          );
+          if (problem) throw new Error(problem);
+        }
         const before = registration.status;
         registration.status = status;
         registration.note = note;
         audit(db, user, "Submission reviewed", id, `${before} → ${status}: ${note}`);
         notify(db, registration.userId, `${id}: ${status}. ${note}`);
         return success("Document review saved. Acceptance confirms CFO requirements only.");
+      }
+      if (intent === "reviewDocument") {
+        const document = db.documents.find((d) => d.id === id && !d.supersededBy);
+        const registration = db.registrations.find((r) => r.id === document?.registrationId);
+        if (!document || !registration || registration.status === "Withdrawn")
+          throw new Error("Document unavailable for review.");
+        const status = enumValue(form, "status", ["Accepted", "Requires correction"]);
+        const note =
+          status === "Requires correction" ? text(form, "note", 500) : optional(form, "note", 500);
+        document.status = status;
+        document.note = note;
+        document.reviewedAt = now;
+        if (status === "Requires correction") {
+          registration.status = status;
+          registration.note = `${document.filename}: ${note}`;
+        }
+        audit(
+          db,
+          user,
+          "Document reviewed",
+          registration.id,
+          `${document.id}; ${document.filename}; ${status}: ${note}`,
+        );
+        notify(db, registration.userId, `${document.filename}: ${status}. ${note}`);
+        return success("Document review saved. Registration acceptance is a separate decision.");
+      }
+      if (intent === "assignGroup") {
+        const registration = db.registrations.find((r) => r.id === id && r.status !== "Withdrawn");
+        if (!registration) throw new Error("Participant unavailable.");
+        const before = `${registration.group ?? ""}; ${registration.facilitator ?? ""}`;
+        registration.group = optional(form, "group", 60);
+        registration.facilitator = optional(form, "facilitator", 100);
+        audit(
+          db,
+          user,
+          "Participant group changed",
+          id,
+          `${before} → ${registration.group}; ${registration.facilitator}`,
+        );
+        return success("Participant group saved.");
       }
       if (["attendance", "correctAttendance"].includes(intent)) {
         const registration = db.registrations.find((r) => r.id === id && r.status !== "Withdrawn");
@@ -383,7 +545,9 @@ export async function workflowAction(
           db.attendance.push(attendance);
         }
         if (attendance[entry])
-          throw new Error("This entry already exists. Use an authorized correction.");
+          return success(
+            `${entry === "timeIn" ? "Time-in" : "Time-out"} was already recorded. No duplicate entry created.`,
+          );
         if (entry === "timeOut" && !attendance.timeIn)
           throw new Error("Record time-in before time-out.");
         attendance[entry] = now;
@@ -403,7 +567,7 @@ export async function workflowAction(
         const request = {
           id: randomUUID(),
           userId: user.id,
-          facility: enumValue(form, "facility", facilityNames),
+          facility: enumValue(form, "facility", configuredFacilities(db)),
           purpose: text(form, "purpose", 500),
           start: startISO,
           end: endISO,
@@ -520,12 +684,67 @@ export async function workflowAction(
           "viewer",
         ]);
         const active = enumValue(form, "active", ["true", "false"]) === "true";
+        confirm(form);
+        const reason = !active ? text(form, "reason", 500) : optional(form, "reason", 500);
         const before = `${account.role}, active=${account.active}`;
         account.role = role;
         account.active = active;
         db.sessions = db.sessions.filter((s) => s.userId !== id);
-        audit(db, user, "Account permission changed", id, `${before} → ${role}, active=${active}`);
+        audit(
+          db,
+          user,
+          "Account permission changed",
+          id,
+          `${before} → ${role}, active=${active}; Reason: ${reason}`,
+        );
         return success("Account updated and previous sessions revoked.");
+      }
+      if (intent === "settings") {
+        confirm(form);
+        const facilities = list(form, "facilities", /\n/);
+        if (
+          !facilities.length ||
+          facilities.length > 40 ||
+          facilities.some((name) => name.length > 100)
+        )
+          throw new FieldError(
+            "facilities",
+            "Provide 1–40 facility names, up to 100 characters each.",
+          );
+        const before = JSON.stringify(db.settings ?? {});
+        db.settings = {
+          ...db.settings,
+          officeName: text(form, "officeName", 80),
+          facilities,
+          updatedAt: now,
+        };
+        audit(
+          db,
+          user,
+          "Office settings changed",
+          "office-settings",
+          `${before} → ${JSON.stringify(db.settings)}`,
+        );
+        return success("Office settings saved. Existing booking history is preserved.");
+      }
+      if (intent === "brandingLogo") {
+        confirm(form);
+        if (!upload) throw new Error("Choose a logo image.");
+        db.settings = {
+          officeName: db.settings?.officeName ?? "Christian Formation Office",
+          facilities: configuredFacilities(db),
+          ...db.settings,
+          logo: upload.storageName,
+          updatedAt: now,
+        };
+        audit(
+          db,
+          user,
+          "Office logo changed",
+          "office-settings",
+          "PNG/JPEG branding image published for the pilot.",
+        );
+        return success("Logo saved. It is visible on the public sign-in and workspace pages.");
       }
       throw new Error("Unsupported action.");
     });
