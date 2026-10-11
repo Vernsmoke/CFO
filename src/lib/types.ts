@@ -1,0 +1,100 @@
+export type Role = "student" | "staff" | "approver" | "representative" | "admin" | "viewer";
+export type User = {
+  id: string;
+  universityId: string;
+  name: string;
+  role: Role;
+  passwordHash: string;
+  active: boolean;
+};
+export type Profile = {
+  userId: string;
+  department: string;
+  year: string;
+  section: string;
+  contact: string;
+  status: "Not submitted" | "Pending verification" | "Verified" | "Correction requested";
+  note: string;
+};
+export type Activity = {
+  id: string;
+  title: string;
+  type: string;
+  description: string;
+  date: string;
+  time: string;
+  venue: string;
+  department: string;
+  deadline: string;
+  requirements: string;
+  status: "Draft" | "Published" | "Postponed" | "Cancelled" | "Archived";
+  capacity: number;
+  createdBy: string;
+};
+export type Registration = {
+  id: string;
+  userId: string;
+  activityId: string;
+  status: "Submitted" | "Under review" | "Requires correction" | "Accepted" | "Withdrawn";
+  note: string;
+  submittedAt: string;
+};
+export type DocumentRecord = {
+  id: string;
+  registrationId: string;
+  userId: string;
+  filename: string;
+  storageName: string;
+  mime: string;
+  uploadedAt: string;
+};
+export type Attendance = { id: string; registrationId: string; timeIn: string; timeOut: string };
+export type FacilityRequest = {
+  id: string;
+  userId: string;
+  facility: string;
+  purpose: string;
+  start: string;
+  end: string;
+  participants: number;
+  status: "Pending" | "Approved" | "Rejected" | "Returned for correction";
+  note: string;
+};
+export type Announcement = {
+  id: string;
+  title: string;
+  body: string;
+  department: string;
+  createdAt: string;
+  author: string;
+};
+export type Audit = {
+  id: string;
+  actorId: string;
+  action: string;
+  target: string;
+  detail: string;
+  at: string;
+};
+export type Notification = {
+  id: string;
+  userId: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+};
+export type Database = {
+  users: User[];
+  profiles: Profile[];
+  activities: Activity[];
+  registrations: Registration[];
+  documents: DocumentRecord[];
+  attendance: Attendance[];
+  facilities: FacilityRequest[];
+  announcements: Announcement[];
+  audit: Audit[];
+  notifications: Notification[];
+  sessions: { tokenHash: string; userId: string; expiresAt: number }[];
+  attempts: { key: string; count: number; resetAt: number }[];
+};
+export type ActionResult = { ok: boolean; message: string };
