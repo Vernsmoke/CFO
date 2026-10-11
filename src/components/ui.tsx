@@ -46,7 +46,7 @@ export function PageHeading({
 }: {
   eyebrow?: string;
   title: string;
-  description: string;
+  description?: string;
   action?: React.ReactNode;
 }) {
   return (
@@ -54,7 +54,7 @@ export function PageHeading({
       <div>
         {eyebrow && <span className="tiny-overline">{eyebrow}</span>}
         <h1>{title}</h1>
-        <p>{description}</p>
+        {description && <p>{description}</p>}
       </div>
       {action}
     </div>

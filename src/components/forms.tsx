@@ -158,7 +158,7 @@ export function LoginForm({ demoPassword }: { demoPassword?: string }) {
         </div>
       </div>
       <button className="button" disabled={pending}>
-        {pending ? "Signing in…" : "Sign in to your workspace"}
+        {pending ? "Signing in…" : "Sign in"}
         {pending && <LoaderCircle size={16} className="spin" />}
       </button>
       {state.message && (
@@ -167,7 +167,7 @@ export function LoginForm({ demoPassword }: { demoPassword?: string }) {
         </p>
       )}
       {demoPassword && (
-        <details className="demo-accounts" open>
+        <details className="demo-accounts">
           <summary>Explore the fictional pilot</summary>
           <p>
             Shared pilot password: <code>{demoPassword}</code>
@@ -197,10 +197,7 @@ export function LoginForm({ demoPassword }: { demoPassword?: string }) {
           </div>
         </details>
       )}
-      <p className="muted small">
-        Need account assistance? Contact the Christian Formation Office. An ID Number alone does not
-        establish identity.
-      </p>
+      <p className="muted small">Need help signing in? Contact the CFO.</p>
     </form>
   );
 }

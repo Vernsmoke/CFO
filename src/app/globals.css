@@ -14,7 +14,7 @@
   --ink: #253b32;
   --green: #285341;
   --deep: #203f32;
-  --muted: #78827a;
+  --muted: #536256;
   --paper: #f7f8f3;
   --white: #fff;
   --line: #e4e8df;
@@ -31,10 +31,15 @@ html {
 body {
   margin: 0;
   color: var(--ink);
-  font-family: Cabinet, "Segoe UI", sans-serif;
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   background: var(--paper);
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 1.125rem;
+  line-height: 1.65;
 }
 button,
 input,
@@ -111,7 +116,7 @@ summary:focus-visible {
   background: var(--green);
   color: white;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 1rem;
   transition:
     background 0.2s,
     transform 0.2s;
@@ -143,7 +148,7 @@ summary:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: 1rem;
   font-weight: 600;
 }
 .text-link:hover,
@@ -152,7 +157,7 @@ summary:focus-visible {
 }
 .tiny-overline {
   display: block;
-  font-size: 10px;
+  font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.17em;
   line-height: 1.7;
@@ -161,7 +166,7 @@ summary:focus-visible {
   color: var(--muted);
 }
 .small {
-  font-size: 12px;
+  font-size: 1rem;
 }
 .icon-button {
   display: inline-flex;
@@ -217,7 +222,7 @@ summary:focus-visible {
 }
 .brand small {
   display: block;
-  font-size: 7px;
+  font-size: 0.75rem;
   letter-spacing: 0.11em;
   margin-top: 5px;
 }
@@ -241,7 +246,7 @@ summary:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 1rem;
   padding: 4px 9px;
   border-radius: 5px;
   white-space: nowrap;
@@ -317,7 +322,7 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   gap: 34px;
-  font-size: 14px;
+  font-size: 1rem;
 }
 .mobile-menu {
   display: none;
@@ -351,7 +356,7 @@ summary:focus-visible {
 }
 .hero-copy > p {
   max-width: 370px;
-  font-size: 17px;
+  font-size: 1.125rem;
   color: #6c786b;
   line-height: 1.7;
 }
@@ -365,7 +370,7 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   gap: 17px;
-  font-size: 13px;
+  font-size: 1rem;
   color: #7a8273;
 }
 .hero-signature strong {
@@ -404,7 +409,7 @@ summary:focus-visible {
   color: #fff;
 }
 .image-caption > span {
-  font-size: 9px;
+  font-size: 1rem;
   letter-spacing: 0.19em;
   color: #ded9bf;
 }
@@ -418,7 +423,7 @@ summary:focus-visible {
   position: absolute;
   right: 18px;
   bottom: 15px;
-  font-size: 8px;
+  font-size: 1rem;
   color: #ffffffaa;
 }
 .formation-marquee {
@@ -488,7 +493,7 @@ summary:focus-visible {
 .section-intro > p {
   max-width: 390px;
   color: #798271;
-  font-size: 17px;
+  font-size: 1.125rem;
   margin-bottom: 5px;
 }
 .horizontal-accordion {
@@ -531,7 +536,7 @@ summary:focus-visible {
   font-weight: 500;
 }
 .journey-panel p {
-  font-size: 14px;
+  font-size: 1.125rem;
   margin-top: 17px;
   opacity: 0.75;
   max-width: 280px;
@@ -539,7 +544,7 @@ summary:focus-visible {
 .journey-panel > span {
   display: block;
   margin-top: 18px;
-  font-size: 12px;
+  font-size: 1rem;
   opacity: 0.7;
   max-width: 285px;
 }
@@ -596,7 +601,7 @@ summary:focus-visible {
 }
 .step-number {
   align-self: flex-start;
-  font-size: 15px;
+  font-size: 1rem;
   color: #8c9c78;
   font-family: Georgia, serif;
 }
@@ -608,7 +613,7 @@ summary:focus-visible {
   font-weight: 500;
 }
 .step-panel p {
-  font-size: 16px;
+  font-size: 1.125rem;
   margin-top: 20px;
   color: #718063;
 }
@@ -616,7 +621,7 @@ summary:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 13px;
-  font-size: 13px;
+  font-size: 1rem;
   margin-top: 25px;
   font-weight: 600;
 }
@@ -657,11 +662,11 @@ summary:focus-visible {
   margin: 30px 0;
 }
 .guidance-copy strong {
-  font-size: 13px;
+  font-size: 1rem;
   font-weight: 600;
 }
 .guidance-copy p {
-  font-size: 14px;
+  font-size: 1.125rem;
   max-width: 430px;
   color: #7a8574;
   margin-top: 9px;
@@ -671,7 +676,7 @@ summary:focus-visible {
   gap: 15px;
   align-items: center;
   margin-top: 30px;
-  font-size: 11px;
+  font-size: 1rem;
   color: #7d886f;
 }
 .carousel-controls .icon-button {
@@ -698,7 +703,7 @@ summary:focus-visible {
   color: #d7d5ad;
 }
 .public-cta p {
-  font-size: 11px;
+  font-size: 1.125rem;
   color: #aebba0;
   letter-spacing: 0.13em;
   margin-top: 32px;
@@ -713,17 +718,17 @@ summary:focus-visible {
   margin: auto;
 }
 .public-footer > p {
-  font-size: 11px;
+  font-size: 1.125rem;
   color: #7b8477;
 }
 .public-footer > a {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 1rem;
 }
 .public-footer > small {
-  font-size: 9px;
+  font-size: 1rem;
   color: #8a907f;
 }
 /* Sign in */
@@ -767,12 +772,12 @@ summary:focus-visible {
 }
 .login-story p {
   color: #c2ccb7;
-  font-size: 16px;
+  font-size: 1.125rem;
   max-width: 350px;
 }
 .login-story > small {
   color: #aabb9a;
-  font-size: 11px;
+  font-size: 1rem;
 }
 .login-story .tiny-overline {
   color: #ced3b0;
@@ -782,7 +787,7 @@ summary:focus-visible {
   background: #fbfcf7;
 }
 .back-link {
-  font-size: 12px;
+  font-size: 1rem;
   color: #7f887a;
 }
 .login-content {
@@ -800,7 +805,7 @@ summary:focus-visible {
   color: #79886b;
 }
 .login-content > .muted {
-  font-size: 14px;
+  font-size: 1rem;
 }
 .login-form {
   margin-top: 32px;
@@ -816,7 +821,7 @@ summary:focus-visible {
   border-top: 1px solid var(--line);
   margin-top: 28px;
   padding-top: 20px;
-  font-size: 10px;
+  font-size: 1rem;
   color: #87917e;
   display: flex;
   gap: 9px;
@@ -826,12 +831,12 @@ summary:focus-visible {
   background: #eef2e7;
   border-radius: 8px;
   padding: 15px;
-  font-size: 11px;
+  font-size: 1rem;
 }
 .demo-accounts summary {
   cursor: pointer;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 1rem;
 }
 .demo-accounts p {
   margin: 10px 0;
@@ -839,7 +844,7 @@ summary:focus-visible {
 }
 .demo-accounts code {
   font-family: monospace;
-  font-size: 11px;
+  font-size: 1rem;
 }
 .account-grid {
   display: grid;
@@ -887,7 +892,7 @@ summary:focus-visible {
   font-size: 22px;
 }
 .workspace-label {
-  font-size: 9px;
+  font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.13em;
@@ -907,7 +912,7 @@ summary:focus-visible {
   padding: 12px 13px;
   border-radius: 7px;
   color: #778371;
-  font-size: 13px;
+  font-size: 1rem;
   font-weight: 500;
   transition:
     background 0.2s,
@@ -925,7 +930,7 @@ summary:focus-visible {
 .nav-link > b {
   background: #e7c979;
   color: #3d4b2c;
-  font-size: 9px;
+  font-size: 1rem;
   padding: 1px 6px;
   border-radius: 4px;
   margin-left: auto;
@@ -954,7 +959,7 @@ summary:focus-visible {
   transform: rotate(30deg);
 }
 .support-note .tiny-overline {
-  font-size: 8px;
+  font-size: 0.875rem;
   color: #859771;
 }
 .support-note p {
@@ -968,7 +973,7 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 600;
   color: #5b7450;
 }
@@ -987,7 +992,7 @@ summary:focus-visible {
   color: #5b744b;
   width: 34px;
   height: 34px;
-  font-size: 11px;
+  font-size: 1rem;
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -997,14 +1002,14 @@ summary:focus-visible {
 }
 .sidebar-user strong {
   display: block;
-  font-size: 10px;
+  font-size: 1rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .sidebar-user small {
   display: block;
-  font-size: 8px;
+  font-size: 1rem;
   color: #8a9680;
   margin-top: 2px;
 }
@@ -1033,7 +1038,7 @@ summary:focus-visible {
   align-items: center;
   gap: 12px;
   color: #9aa393;
-  font-size: 11px;
+  font-size: 1rem;
 }
 .workspace-header strong {
   font-weight: 500;
@@ -1045,7 +1050,7 @@ summary:focus-visible {
   gap: 23px;
 }
 .term-label {
-  font-size: 10px;
+  font-size: 0.875rem;
   color: #85917a;
 }
 .notification-button {
@@ -1066,7 +1071,7 @@ summary:focus-visible {
 .small-avatar {
   width: 31px;
   height: 31px;
-  font-size: 9px;
+  font-size: 1rem;
 }
 .workspace-content {
   padding: 36px 39px 30px;
@@ -1082,7 +1087,7 @@ summary:focus-visible {
   display: flex;
   justify-content: space-between;
   color: #9aa38e;
-  font-size: 9px;
+  font-size: 0.875rem;
   gap: 15px;
 }
 .mobile-bar {
@@ -1108,7 +1113,7 @@ summary:focus-visible {
 }
 .page-heading .tiny-overline {
   color: #91a080;
-  font-size: 8px;
+  font-size: 0.875rem;
   margin-bottom: 9px;
 }
 .page-heading h1 {
@@ -1117,12 +1122,12 @@ summary:focus-visible {
   letter-spacing: -0.045em;
 }
 .page-heading p {
-  font-size: 12px;
+  font-size: 1.125rem;
   color: #8c967e;
   margin-top: 9px;
 }
 .profile-status {
-  font-size: 10px;
+  font-size: 1rem;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1151,7 +1156,7 @@ summary:focus-visible {
   background: radial-gradient(ellipse at top left, #436444, #285341);
 }
 .dashboard-hero .tiny-overline {
-  font-size: 8px;
+  font-size: 0.875rem;
   color: #c3d1b3;
   margin-bottom: 13px;
 }
@@ -1166,14 +1171,14 @@ summary:focus-visible {
   font-size: 39px;
 }
 .dashboard-hero p {
-  font-size: 11px;
+  font-size: 1.125rem;
   max-width: 310px;
   color: #bdcdb2;
   margin-top: 14px;
   line-height: 1.65;
 }
 .dashboard-hero .button {
-  font-size: 10px;
+  font-size: 1rem;
   min-height: 36px;
   padding: 8px 14px;
   margin-top: 20px;
@@ -1215,7 +1220,7 @@ summary:focus-visible {
   margin: 0;
   line-height: 1.35;
   font-family: Georgia, serif;
-  font-size: 17px;
+  font-size: 1.125rem;
 }
 .metrics-grid {
   display: grid;
@@ -1248,7 +1253,7 @@ summary:focus-visible {
   color: #86937b;
 }
 .metric > div > span {
-  font-size: 10px;
+  font-size: 1rem;
 }
 .metric > div > svg {
   color: #78916c;
@@ -1263,7 +1268,7 @@ summary:focus-visible {
   margin: 8px 0 3px;
 }
 .metric > small {
-  font-size: 9px;
+  font-size: 1rem;
   color: #9ba68d;
   display: flex;
   justify-content: space-between;
@@ -1280,12 +1285,12 @@ summary:focus-visible {
   margin: 25px 0 28px;
 }
 .attention-note strong {
-  font-size: 11px;
+  font-size: 1rem;
   color: #7d693d;
   font-weight: 600;
 }
 .attention-note p {
-  font-size: 10px;
+  font-size: 1.125rem;
   color: #a29471;
   margin-top: 3px;
 }
@@ -1294,7 +1299,7 @@ summary:focus-visible {
   align-items: center;
   gap: 9px;
   margin-left: auto;
-  font-size: 10px;
+  font-size: 1rem;
   color: #8d7845;
   white-space: nowrap;
 }
@@ -1316,7 +1321,7 @@ summary:focus-visible {
   gap: 10px;
 }
 .section-heading h2 {
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: -0.025em;
 }
@@ -1324,7 +1329,7 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: 1rem;
   color: #6b8356;
 }
 .dashboard-columns > div > .section-heading:first-child,
@@ -1426,7 +1431,7 @@ summary:focus-visible {
   position: absolute;
   top: 13px;
   left: 12px;
-  font-size: 8px;
+  font-size: 0.875rem;
   background: #ffffffad;
   padding: 3px 7px;
   border-radius: 4px;
@@ -1446,11 +1451,11 @@ summary:focus-visible {
 }
 .date-square strong {
   display: block;
-  font-size: 14px;
+  font-size: 1rem;
   line-height: 1.15;
 }
 .date-square small {
-  font-size: 7px;
+  font-size: 0.875rem;
   text-transform: uppercase;
   line-height: 1;
 }
@@ -1464,19 +1469,19 @@ summary:focus-visible {
   gap: 3px;
 }
 .tile-status .status {
-  font-size: 7px;
+  font-size: 1rem;
   padding: 3px 5px;
   gap: 3px;
 }
 .tile-status .small {
-  font-size: 8px;
+  font-size: 1rem;
 }
 .tile-status > svg {
   color: #8c9c7c;
   width: 13px;
 }
 .activity-tile h3 {
-  font-size: 13px;
+  font-size: 1rem;
   line-height: 1.25;
   min-height: 34px;
   margin: 12px 0;
@@ -1485,7 +1490,7 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 8px;
+  font-size: 1.125rem;
   color: #92a082;
   line-height: 1.6;
   margin-top: 5px;
@@ -1509,13 +1514,13 @@ summary:focus-visible {
   min-width: 0;
 }
 .registration-line strong {
-  font-size: 11px;
+  font-size: 1rem;
   font-weight: 600;
   display: block;
 }
 .registration-line small {
   display: block;
-  font-size: 8px;
+  font-size: 1rem;
   color: #a0ac91;
   margin-top: 4px;
 }
@@ -1525,7 +1530,7 @@ summary:focus-visible {
   border-radius: 7px;
 }
 .registration-line .status {
-  font-size: 8px;
+  font-size: 1rem;
 }
 .registration-line > .icon-button {
   width: 22px;
@@ -1543,21 +1548,21 @@ summary:focus-visible {
 .announcement-preview article > div {
   display: flex;
   justify-content: space-between;
-  font-size: 8px;
+  font-size: 1rem;
   color: #a4ac96;
 }
 .announcement-preview article .small {
-  font-size: 8px;
+  font-size: 1rem;
   color: #799063;
 }
 .announcement-preview h3 {
-  font-size: 13px;
+  font-size: 1rem;
   line-height: 1.35;
   font-weight: 600;
   margin: 9px 0;
 }
 .announcement-preview p {
-  font-size: 10px;
+  font-size: 1.125rem;
   line-height: 1.7;
   color: #909c80;
   display: -webkit-box;
@@ -1569,7 +1574,7 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 9px;
+  font-size: 1rem;
   color: #688255;
   margin-top: 12px;
 }
@@ -1609,7 +1614,7 @@ summary:focus-visible {
   font-size: 25px;
 }
 .quiet-card p {
-  font-size: 10px;
+  font-size: 1.125rem;
   color: #8d9b7e;
   line-height: 1.8;
   margin-top: 16px;
@@ -1619,7 +1624,7 @@ summary:focus-visible {
 .notification-summary {
   margin-top: 25px;
   color: #788768;
-  font-size: 12px;
+  font-size: 1rem;
 }
 .notification-summary summary {
   cursor: pointer;
@@ -1636,7 +1641,7 @@ summary:focus-visible {
   margin: 20px 0;
 }
 .role-welcome p {
-  font-size: 14px;
+  font-size: 1.125rem;
   color: #819071;
   max-width: 650px;
 }
@@ -1651,7 +1656,7 @@ summary:focus-visible {
   align-items: flex-start;
 }
 .workflow-form > .button {
-  font-size: 12px;
+  font-size: 1rem;
   min-height: 40px;
 }
 .field {
@@ -1661,7 +1666,7 @@ summary:focus-visible {
   width: 100%;
 }
 .field > span {
-  font-size: 11px;
+  font-size: 1rem;
   font-weight: 600;
   color: #6b7b5f;
 }
@@ -1674,7 +1679,7 @@ summary:focus-visible {
   border-radius: 6px;
   background: #fcfdf9;
   color: var(--ink);
-  font-size: 13px;
+  font-size: 1rem;
   min-height: 43px;
 }
 .field input::placeholder {
@@ -1699,7 +1704,7 @@ summary:focus-visible {
   display: flex;
   gap: 8px;
   align-items: flex-start;
-  font-size: 12px;
+  font-size: 1rem;
   border-radius: 6px;
   padding: 12px 14px;
   width: 100%;
@@ -1728,7 +1733,7 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 1rem;
   font-weight: 600;
   color: #5b7649;
   cursor: pointer;
@@ -1766,7 +1771,7 @@ summary:focus-visible {
   border: 0;
   outline: none;
   background: transparent;
-  font-size: 12px;
+  font-size: 1rem;
   color: var(--ink);
   min-width: 0;
 }
@@ -1787,12 +1792,12 @@ summary:focus-visible {
   border: 0;
   background: transparent;
   color: #6e8459;
-  font-size: 11px;
+  font-size: 1rem;
   max-width: 180px;
 }
 .result-count {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 1rem;
   color: #98a388;
   white-space: nowrap;
 }
@@ -1817,19 +1822,19 @@ summary:focus-visible {
   line-height: 1.2;
 }
 .record-top .tiny-overline {
-  font-size: 9px;
+  font-size: 0.875rem;
   color: #8a9d76;
   margin-bottom: 8px;
 }
 .record-top p {
-  font-size: 11px;
+  font-size: 1.125rem;
   color: #8d9b7d;
   margin-top: 7px;
 }
 .record-facts {
   display: flex;
   gap: 25px;
-  font-size: 12px;
+  font-size: 1rem;
   color: #7c8e69;
   margin-bottom: 20px;
 }
@@ -1838,7 +1843,7 @@ summary:focus-visible {
   background: #faf6e9;
   border-left: 2px solid #d7bf7b;
   color: #928052;
-  font-size: 12px;
+  font-size: 1rem;
   margin: 16px 0 20px;
   line-height: 1.6;
   border-radius: 0 5px 5px 0;
@@ -1855,17 +1860,17 @@ summary:focus-visible {
   margin: 20px 0;
 }
 .requirement-box strong {
-  font-size: 11px;
+  font-size: 1rem;
   color: #6b8057;
 }
 .requirement-box p {
-  font-size: 12px;
+  font-size: 1.125rem;
   color: #859675;
   margin-top: 6px;
 }
 .requirement-box small {
   display: block;
-  font-size: 10px;
+  font-size: 1rem;
   color: #9aa788;
   margin-top: 10px;
 }
@@ -1877,7 +1882,7 @@ summary:focus-visible {
   background: #eef3e7;
   border: 1px solid #e0e9d6;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: 1rem;
   color: #70865e;
   margin: 20px 0;
 }
@@ -1923,7 +1928,7 @@ summary:focus-visible {
   padding: 27px 30px;
 }
 .activity-detail-body > .between > .tiny-overline {
-  font-size: 9px;
+  font-size: 0.875rem;
   color: #94a07d;
 }
 .activity-detail h2 {
@@ -1934,7 +1939,7 @@ summary:focus-visible {
 }
 .activity-detail-body > p {
   color: #8e9b7d;
-  font-size: 12px;
+  font-size: 1.125rem;
   max-width: 650px;
 }
 .activity-meta {
@@ -1943,7 +1948,7 @@ summary:focus-visible {
   gap: 23px;
   flex-wrap: wrap;
   margin: 20px 0;
-  font-size: 11px;
+  font-size: 1rem;
   color: #81936d;
 }
 .activity-meta > span {
@@ -1976,12 +1981,12 @@ summary:focus-visible {
   margin: 20px 0;
 }
 .document-list h3 {
-  font-size: 13px;
+  font-size: 1rem;
   font-weight: 600;
   margin: 12px 0;
 }
 .document-list h3 > span {
-  font-size: 10px;
+  font-size: 1rem;
   color: #8fa578;
   margin-left: 6px;
   background: #edf3e4;
@@ -1998,7 +2003,7 @@ summary:focus-visible {
   border-radius: 6px;
   margin: 9px 0;
   color: #72915a;
-  font-size: 12px;
+  font-size: 1rem;
   transition: background 0.2s;
 }
 .document-list > a:hover {
@@ -2010,7 +2015,7 @@ summary:focus-visible {
 }
 .document-list small {
   display: block;
-  font-size: 9px;
+  font-size: 1rem;
   color: #a2af92;
   margin-top: 2px;
 }
@@ -2027,15 +2032,15 @@ summary:focus-visible {
   color: #7d9566;
 }
 .upload-field > span {
-  font-size: 13px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .upload-field > small {
-  font-size: 10px;
+  font-size: 1rem;
   color: #93a47d;
 }
 .upload-field input {
-  font-size: 11px;
+  font-size: 1rem;
   margin-top: 10px;
   max-width: 100%;
 }
@@ -2044,7 +2049,7 @@ summary:focus-visible {
   border-top: 1px solid var(--line);
   padding-top: 17px;
   margin-top: 23px;
-  font-size: 11px;
+  font-size: 1rem;
   color: #879673;
 }
 .withdraw-details summary,
@@ -2084,12 +2089,12 @@ summary:focus-visible {
   font-size: 23px;
 }
 .profile-card > p {
-  font-size: 12px;
+  font-size: 1.125rem;
   color: #92a27f;
   margin: 10px 0 18px;
 }
 .profile-card .small {
-  font-size: 11px;
+  font-size: 1rem;
   line-height: 1.8;
 }
 .profile-divider {
@@ -2127,7 +2132,7 @@ summary:focus-visible {
 .attendance-times span {
   display: block;
   color: #91a17d;
-  font-size: 10px;
+  font-size: 1rem;
 }
 .attendance-times strong {
   display: block;
@@ -2136,7 +2141,7 @@ summary:focus-visible {
   margin-top: 5px;
 }
 .attendance-times small {
-  font-size: 9px;
+  font-size: 1rem;
   color: #a0ac8f;
 }
 .conflict-note {
@@ -2153,10 +2158,10 @@ summary:focus-visible {
   flex-shrink: 0;
 }
 .conflict-note strong {
-  font-size: 12px;
+  font-size: 1rem;
 }
 .conflict-note p {
-  font-size: 11px;
+  font-size: 1.125rem;
   margin-top: 6px;
   color: #aa915e;
 }
@@ -2164,7 +2169,7 @@ summary:focus-visible {
   padding: 29px 32px;
 }
 .announcement-full .tiny-overline {
-  font-size: 9px;
+  font-size: 0.875rem;
   color: #8da475;
 }
 .announcement-full h2 {
@@ -2174,7 +2179,7 @@ summary:focus-visible {
 }
 .announcement-full > p {
   max-width: 850px;
-  font-size: 14px;
+  font-size: 1.125rem;
   line-height: 1.8;
   color: #7c8c6b;
   white-space: pre-wrap;
@@ -2183,7 +2188,7 @@ summary:focus-visible {
   display: block;
   margin-top: 24px;
   color: #9eac8d;
-  font-size: 10px;
+  font-size: 1rem;
 }
 .notification-row {
   display: flex;
@@ -2202,11 +2207,11 @@ summary:focus-visible {
   flex: 1;
 }
 .notification-row p {
-  font-size: 13px;
+  font-size: 1.125rem;
   color: #6d805b;
 }
 .notification-row small {
-  font-size: 10px;
+  font-size: 1rem;
   color: #a1ae8f;
   display: block;
   margin-top: 6px;
@@ -2231,7 +2236,7 @@ summary:focus-visible {
   padding: 23px;
 }
 .report-metrics span {
-  font-size: 11px;
+  font-size: 1rem;
   color: #96a283;
 }
 .report-metrics strong {
@@ -2253,11 +2258,11 @@ summary:focus-visible {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 1rem;
   text-align: left;
 }
 th {
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 500;
   color: #8da376;
   padding: 13px 16px;
@@ -2272,7 +2277,7 @@ td {
 td small {
   display: block;
   color: #a0af8e;
-  font-size: 10px;
+  font-size: 1rem;
   margin-top: 6px;
 }
 td:not(:first-child) {
@@ -2292,16 +2297,16 @@ th:not(:first-child) {
   min-width: 0;
 }
 .audit-row h3 {
-  font-size: 15px;
+  font-size: 1rem;
 }
 .audit-row p {
-  font-size: 11px;
+  font-size: 1.125rem;
   color: #91a17c;
   margin-top: 6px;
 }
 .audit-row pre {
   font-family: Cabinet, sans-serif;
-  font-size: 11px;
+  font-size: 1rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: #839571;
@@ -2311,7 +2316,7 @@ th:not(:first-child) {
   line-height: 1.6;
 }
 .audit-row time {
-  font-size: 10px;
+  font-size: 0.875rem;
   color: #98a888;
   text-align: right;
   white-space: nowrap;
@@ -2331,7 +2336,7 @@ th:not(:first-child) {
   font-weight: 500;
 }
 .empty-state p {
-  font-size: 12px;
+  font-size: 1.125rem;
 }
 .error-page {
   min-height: 70vh;
@@ -2367,28 +2372,28 @@ th:not(:first-child) {
     font-size: 47px;
   }
   .dashboard-hero p {
-    font-size: 13px;
+    font-size: 1.125rem;
   }
   .activity-art {
     height: 150px;
   }
   .activity-tile h3 {
-    font-size: 16px;
+    font-size: 1rem;
   }
   .activity-tile p {
-    font-size: 10px;
+    font-size: 1.125rem;
   }
   .activity-tile-content {
     padding: 19px;
   }
   .announcement-preview h3 {
-    font-size: 15px;
+    font-size: 1rem;
   }
   .announcement-preview p {
-    font-size: 12px;
+    font-size: 1.125rem;
   }
   .quiet-card p {
-    font-size: 12px;
+    font-size: 1.125rem;
   }
 }
 @media (max-width: 1150px) {
@@ -2426,16 +2431,16 @@ th:not(:first-child) {
     padding: 16px;
   }
   .metric > div > span {
-    font-size: 9px;
+    font-size: 1rem;
   }
   .page-heading h1 {
     font-size: 28px;
   }
   .page-heading p {
-    font-size: 11px;
+    font-size: 1.125rem;
   }
   .profile-status {
-    font-size: 9px;
+    font-size: 1rem;
   }
   .public-hero {
     gap: 30px;
@@ -2466,7 +2471,7 @@ th:not(:first-child) {
     gap: 25px;
   }
   .public-footer .brand strong {
-    font-size: 17px;
+    font-size: 1rem;
   }
   .guidance-section {
     gap: 45px;
@@ -2488,7 +2493,7 @@ th:not(:first-child) {
     padding: 17px;
   }
   .report-metrics span {
-    font-size: 10px;
+    font-size: 1rem;
   }
 }
 @media (max-width: 800px) {
@@ -2496,7 +2501,7 @@ th:not(:first-child) {
     padding: 20px 6%;
   }
   .public-nav .brand strong {
-    font-size: 18px;
+    font-size: 1rem;
   }
   .public-nav nav {
     display: none;
@@ -2528,7 +2533,7 @@ th:not(:first-child) {
     margin-right: 0;
   }
   .hero-copy > p {
-    font-size: 16px;
+    font-size: 1.125rem;
     max-width: 450px;
   }
   .hero-actions {
@@ -2555,7 +2560,7 @@ th:not(:first-child) {
     margin-bottom: 0;
   }
   .section-intro > p {
-    font-size: 15px;
+    font-size: 1.125rem;
     max-width: 500px;
   }
   .horizontal-accordion {
@@ -2596,7 +2601,7 @@ th:not(:first-child) {
     font-size: 30px;
   }
   .step-panel p {
-    font-size: 14px;
+    font-size: 1.125rem;
   }
   .step-art {
     display: none;
@@ -2645,13 +2650,13 @@ th:not(:first-child) {
     margin: 14px 0;
   }
   .login-story p {
-    font-size: 12px;
+    font-size: 1.125rem;
   }
   .login-story > small {
     display: none;
   }
   .login-story .tiny-overline {
-    font-size: 8px;
+    font-size: 0.875rem;
   }
   .login-panel {
     padding: 25px 7% 40px;
@@ -2685,7 +2690,7 @@ th:not(:first-child) {
     height: 35px;
   }
   .mobile-bar .brand small {
-    font-size: 6px;
+    font-size: 0.75rem;
   }
   .sidebar {
     top: 69px;
@@ -2717,21 +2722,21 @@ th:not(:first-child) {
     padding: 0 23px;
   }
   .workspace-header > div:first-child {
-    font-size: 9px;
+    font-size: 1rem;
     gap: 8px;
   }
   .header-right {
     gap: 18px;
   }
   .term-label {
-    font-size: 8px;
+    font-size: 0.875rem;
   }
   .workspace-content {
     padding: 27px 23px;
   }
   .workspace-footer {
     margin: 15px 23px 0;
-    font-size: 8px;
+    font-size: 0.875rem;
     flex-wrap: wrap;
   }
   .page-heading {
@@ -2743,11 +2748,11 @@ th:not(:first-child) {
     font-size: 30px;
   }
   .page-heading p {
-    font-size: 12px;
+    font-size: 1.125rem;
     max-width: 450px;
   }
   .profile-status {
-    font-size: 10px;
+    font-size: 1rem;
   }
   .dashboard-hero > div:first-child {
     padding: 28px;
@@ -2759,7 +2764,7 @@ th:not(:first-child) {
     font-size: 34px;
   }
   .dashboard-hero p {
-    font-size: 11px;
+    font-size: 1.125rem;
   }
   .dashboard-hero {
     grid-template-columns: 1.2fr 1fr;
@@ -2781,10 +2786,10 @@ th:not(:first-child) {
     font-size: 30px;
   }
   .metric > small {
-    font-size: 8px;
+    font-size: 1rem;
   }
   .metric > div > span {
-    font-size: 10px;
+    font-size: 1rem;
   }
   .attention-note {
     padding: 15px;
@@ -2795,7 +2800,7 @@ th:not(:first-child) {
     flex: 1;
   }
   .attention-note p {
-    font-size: 11px;
+    font-size: 1.125rem;
   }
   .attention-note > a {
     margin-left: 45px;
@@ -2804,11 +2809,11 @@ th:not(:first-child) {
     height: 130px;
   }
   .activity-tile h3 {
-    font-size: 14px;
+    font-size: 1rem;
     min-height: 36px;
   }
   .activity-tile p {
-    font-size: 9px;
+    font-size: 1.125rem;
   }
   .activity-tile-content {
     padding: 15px 13px;
@@ -2888,7 +2893,7 @@ th:not(:first-child) {
     padding: 16px;
   }
   .audit-row time {
-    font-size: 9px;
+    font-size: 0.875rem;
   }
 }
 @media (max-width: 520px) {
@@ -2905,7 +2910,7 @@ th:not(:first-child) {
     display: none;
   }
   .term-label {
-    font-size: 9px;
+    font-size: 0.875rem;
   }
   .header-right {
     gap: 16px;
@@ -2914,10 +2919,10 @@ th:not(:first-child) {
     font-size: 28px;
   }
   .page-heading p {
-    font-size: 11px;
+    font-size: 1.125rem;
   }
   .page-heading > .profile-status {
-    font-size: 9px;
+    font-size: 1rem;
   }
   .dashboard-hero {
     grid-template-columns: 1fr;
@@ -2937,14 +2942,14 @@ th:not(:first-child) {
     right: 22px;
   }
   .landscape-words p {
-    font-size: 15px;
+    font-size: 1.125rem;
   }
   .landscape-words > svg {
     display: none;
   }
   .dashboard-hero p {
     max-width: 310px;
-    font-size: 12px;
+    font-size: 1.125rem;
   }
   .metrics-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -2957,13 +2962,13 @@ th:not(:first-child) {
     display: block;
   }
   .metric > small {
-    font-size: 9px;
+    font-size: 1rem;
   }
   .attention-note p {
-    font-size: 10px;
+    font-size: 1.125rem;
   }
   .attention-note > a {
-    font-size: 11px;
+    font-size: 1rem;
   }
   .activity-grid {
     grid-template-columns: 1fr;
@@ -2979,10 +2984,10 @@ th:not(:first-child) {
   .activity-tile h3 {
     min-height: 0;
     margin: 11px 0;
-    font-size: 15px;
+    font-size: 1rem;
   }
   .activity-tile p {
-    font-size: 10px;
+    font-size: 1.125rem;
   }
   .activity-type {
     top: auto;
@@ -3004,7 +3009,7 @@ th:not(:first-child) {
     right: auto;
   }
   .activity-tile .status {
-    font-size: 8px;
+    font-size: 1rem;
   }
   .dashboard-aside {
     grid-template-columns: 1fr;
@@ -3013,20 +3018,20 @@ th:not(:first-child) {
     padding: 26px;
   }
   .quiet-card p {
-    font-size: 12px;
+    font-size: 1.125rem;
     max-width: 290px;
   }
   .announcement-preview {
     padding: 3px 20px;
   }
   .announcement-preview h3 {
-    font-size: 15px;
+    font-size: 1rem;
   }
   .announcement-preview p {
-    font-size: 12px;
+    font-size: 1.125rem;
   }
   .announcement-preview a {
-    font-size: 11px;
+    font-size: 1rem;
   }
   .registration-line {
     padding: 17px 14px;
@@ -3039,22 +3044,22 @@ th:not(:first-child) {
   }
   .registration-line > .status {
     margin-left: 40px;
-    font-size: 9px;
+    font-size: 1rem;
   }
   .registration-line > .icon-button {
     margin-left: auto;
   }
   .registration-line strong {
-    font-size: 12px;
+    font-size: 1rem;
   }
   .registration-line small {
-    font-size: 9px;
+    font-size: 1rem;
   }
   .section-heading h2 {
-    font-size: 17px;
+    font-size: 1rem;
   }
   .section-heading > a {
-    font-size: 11px;
+    font-size: 1rem;
   }
   .record-card {
     padding: 22px 18px;
@@ -3064,7 +3069,7 @@ th:not(:first-child) {
     gap: 15px;
   }
   .record-top p {
-    font-size: 11px;
+    font-size: 1.125rem;
   }
   .form-grid {
     grid-template-columns: 1fr;
@@ -3102,20 +3107,20 @@ th:not(:first-child) {
     font-size: 26px;
   }
   .activity-detail-body > p {
-    font-size: 13px;
+    font-size: 1.125rem;
   }
   .activity-meta {
     gap: 14px;
-    font-size: 12px;
+    font-size: 1rem;
   }
   .requirement-box {
     padding: 15px;
   }
   .requirement-box p {
-    font-size: 12px;
+    font-size: 1.125rem;
   }
   .boundary-note {
-    font-size: 11px;
+    font-size: 1rem;
     line-height: 1.6;
   }
   .list-toolbar {
@@ -3142,7 +3147,7 @@ th:not(:first-child) {
     gap: 11px;
   }
   .notification-row p {
-    font-size: 12px;
+    font-size: 1.125rem;
   }
   .notification-row > span:last-child {
     display: none;
@@ -3154,7 +3159,7 @@ th:not(:first-child) {
     padding: 18px;
   }
   .report-metrics span {
-    font-size: 11px;
+    font-size: 1rem;
   }
   .report-metrics strong {
     font-size: 30px;
@@ -3163,10 +3168,10 @@ th:not(:first-child) {
     display: none;
   }
   .audit-row time {
-    font-size: 8px;
+    font-size: 0.875rem;
   }
   .audit-row h3 {
-    font-size: 14px;
+    font-size: 1rem;
   }
   .upload-field {
     padding: 20px 12px;
@@ -3178,11 +3183,11 @@ th:not(:first-child) {
     gap: 20px;
   }
   .hero-actions .button {
-    font-size: 13px;
+    font-size: 1rem;
     padding: 12px 15px;
   }
   .hero-actions .text-link {
-    font-size: 12px;
+    font-size: 1rem;
   }
   .hero-visual {
     height: 370px;
@@ -3208,7 +3213,7 @@ th:not(:first-child) {
     font-size: 26px;
   }
   .step-panel p {
-    font-size: 13px;
+    font-size: 1.125rem;
   }
   .reflection-text {
     font-size: 29px;
@@ -3217,73 +3222,73 @@ th:not(:first-child) {
     font-size: 29px;
   }
   .public-nav .brand strong {
-    font-size: 17px;
+    font-size: 1rem;
   }
   .brand-symbol {
     width: 32px;
     height: 38px;
   }
   .public-nav .brand small {
-    font-size: 6px;
+    font-size: 0.75rem;
   }
 }
 /* Readable workspace typography across laptop and mobile screens. */
 .nav-link {
-  font-size: 14px;
+  font-size: 1rem;
 }
 .workspace-label {
-  font-size: 10px;
+  font-size: 0.875rem;
 }
 .workspace-header > div:first-child {
-  font-size: 12px;
+  font-size: 1rem;
 }
 .term-label {
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 .page-heading p {
-  font-size: 14px;
+  font-size: 1.125rem;
   color: #69785e;
 }
 .page-heading .tiny-overline {
-  font-size: 10px;
+  font-size: 0.875rem;
 }
 .profile-status {
-  font-size: 11px;
+  font-size: 1rem;
 }
 .dashboard-hero .tiny-overline {
-  font-size: 10px;
+  font-size: 0.875rem;
 }
 .dashboard-hero p {
-  font-size: 13px;
+  font-size: 1.125rem;
   color: #d2dfc9;
 }
 .dashboard-hero .button {
-  font-size: 12px;
+  font-size: 1rem;
 }
 .metric > div > span {
-  font-size: 12px;
+  font-size: 1rem;
   color: #637957;
 }
 .metric > small {
-  font-size: 11px;
+  font-size: 1rem;
   color: #728464;
 }
 .attention-note strong {
-  font-size: 13px;
+  font-size: 1rem;
 }
 .attention-note p {
-  font-size: 12px;
+  font-size: 1.125rem;
   color: #87784e;
 }
 .attention-note > a {
-  font-size: 12px;
+  font-size: 1rem;
 }
 .activity-tile h3 {
-  font-size: 16px;
+  font-size: 1rem;
   min-height: 40px;
 }
 .activity-tile p {
-  font-size: 11px;
+  font-size: 1.125rem;
   color: #6c825a;
 }
 .activity-tile p svg {
@@ -3291,126 +3296,126 @@ th:not(:first-child) {
   height: 13px;
 }
 .tile-status .status {
-  font-size: 9px;
+  font-size: 1rem;
 }
 .tile-status .small {
-  font-size: 10px;
+  font-size: 1rem;
 }
 .activity-type {
-  font-size: 10px;
+  font-size: 0.875rem;
 }
 .date-square strong {
-  font-size: 16px;
+  font-size: 1rem;
 }
 .date-square small {
-  font-size: 8px;
+  font-size: 0.875rem;
 }
 .section-heading > a {
-  font-size: 12px;
+  font-size: 1rem;
 }
 .registration-line strong {
-  font-size: 13px;
+  font-size: 1rem;
 }
 .registration-line small {
-  font-size: 10px;
+  font-size: 1rem;
   color: #788b68;
 }
 .registration-line .status {
-  font-size: 10px;
+  font-size: 1rem;
 }
 .announcement-preview h3 {
-  font-size: 16px;
+  font-size: 1rem;
 }
 .announcement-preview p {
-  font-size: 12px;
+  font-size: 1.125rem;
   color: #718460;
 }
 .announcement-preview a {
-  font-size: 11px;
+  font-size: 1rem;
 }
 .announcement-preview article .small,
 .announcement-preview article > div > small {
-  font-size: 10px;
+  font-size: 1rem;
 }
 .quiet-card p {
-  font-size: 12px;
+  font-size: 1.125rem;
   color: #718561;
 }
 .workspace-footer {
-  font-size: 10px;
+  font-size: 0.875rem;
   color: #768966;
 }
 .support-note .tiny-overline {
-  font-size: 9px;
+  font-size: 0.875rem;
 }
 .support-note a {
-  font-size: 12px;
+  font-size: 1rem;
 }
 .sidebar-user strong {
-  font-size: 11px;
+  font-size: 1rem;
 }
 .sidebar-user small {
-  font-size: 9px;
+  font-size: 1rem;
 }
 .field > span {
-  font-size: 12px;
+  font-size: 1rem;
 }
 .status {
-  font-size: 11px;
+  font-size: 1rem;
 }
 .record-top p {
-  font-size: 12px;
+  font-size: 1.125rem;
   color: #738762;
 }
 .activity-detail-body > p {
-  font-size: 14px;
+  font-size: 1.125rem;
   color: #6f835e;
 }
 .requirement-box p {
-  font-size: 13px;
+  font-size: 1.125rem;
   color: #70865d;
 }
 .requirement-box small {
-  font-size: 11px;
+  font-size: 1rem;
 }
 .boundary-note {
-  font-size: 12px;
+  font-size: 1rem;
   color: #607b4e;
 }
 .search-field input {
-  font-size: 13px;
+  font-size: 1rem;
 }
 .notification-row p {
-  font-size: 14px;
+  font-size: 1.125rem;
 }
 .report-metrics span {
-  font-size: 12px;
+  font-size: 1rem;
 }
 .announcement-full > p {
   color: #6a8057;
 }
 .notice-inline {
-  font-size: 13px;
+  font-size: 1rem;
 }
 @media (max-width: 520px) {
   .workspace-header > div:first-child {
-    font-size: 11px;
+    font-size: 1rem;
   }
   .term-label {
-    font-size: 10px;
+    font-size: 0.875rem;
   }
   .page-heading p {
-    font-size: 13px;
+    font-size: 1.125rem;
   }
   .metric > div > span {
-    font-size: 11px;
+    font-size: 1rem;
   }
   .metric > small {
-    font-size: 10px;
+    font-size: 1rem;
   }
   .activity-tile h3 {
     min-height: 0;
-    font-size: 16px;
+    font-size: 1rem;
   }
   .registration-line > div {
     min-width: 180px;
@@ -3419,7 +3424,7 @@ th:not(:first-child) {
     margin-left: 45px;
   }
   .dashboard-hero p {
-    font-size: 13px;
+    font-size: 1.125rem;
   }
   .dashboard-hero h2 {
     font-size: 37px;
@@ -3433,7 +3438,7 @@ th:not(:first-child) {
   display: none;
 }
 .field > label {
-  font-size: 13px;
+  font-size: 1rem;
   font-weight: 600;
   color: #6b7b5f;
 }
@@ -3485,7 +3490,7 @@ th:not(:first-child) {
   color: #526b43;
   min-height: 44px;
   padding: 8px;
-  font-size: 13px;
+  font-size: 1rem;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -3522,7 +3527,7 @@ th:not(:first-child) {
     gap: 12px;
     margin-bottom: 18px;
     padding-left: 13px;
-    font-size: 18px;
+    font-size: 1rem;
   }
   .mobile-bar .icon-button,
   .mobile-drawer-heading .icon-button,
@@ -3536,7 +3541,7 @@ th:not(:first-child) {
   }
   .result-count {
     display: inline;
-    font-size: 13px;
+    font-size: 1rem;
   }
   .filter-field {
     min-height: 48px;
@@ -3549,13 +3554,323 @@ th:not(:first-child) {
   .field textarea,
   .search-field input,
   .filter-field select {
-    font-size: 16px;
+    font-size: 1rem;
   }
   .workflow-form > .button {
     min-height: 44px;
   }
   .search-field {
     padding-block: 2px;
+  }
+}
+/* Reading scale: 18px body, 16px controls, 14px secondary metadata. */
+h1,
+h2,
+h3,
+.brand strong {
+  font-family: Cabinet, "Segoe UI", sans-serif;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+.brand small {
+  max-width: 190px;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+.tiny-overline,
+.workspace-label {
+  letter-spacing: 0.06em;
+}
+.page-heading .tiny-overline,
+.nav-link:not(.active) {
+  color: var(--muted);
+}
+.page-heading p,
+.hero-copy > p,
+.journey-card p,
+.guidance-copy p,
+.login-content > .muted,
+.activity-detail-body > p,
+.announcement-full > p {
+  max-width: 65ch;
+  line-height: 1.75;
+}
+.page-heading p,
+.metric > div > span,
+.metric > small,
+.activity-tile p,
+.activity-type,
+.registration-line small,
+.announcement-preview p,
+.announcement-preview article .small,
+.announcement-preview article > div > small,
+.quiet-card p,
+.workspace-footer,
+.workspace-label,
+.workspace-header > div:first-child,
+.term-label,
+.sidebar-user small,
+.field > span,
+.field > label,
+.record-top p,
+.record-top .tiny-overline,
+.record-facts,
+.activity-detail-body > p,
+.activity-detail-body > .between > .tiny-overline,
+.requirement-box strong,
+.requirement-box p,
+.requirement-box small,
+.boundary-note,
+.activity-meta,
+.profile-card > p,
+.profile-card .small,
+.notification-row p,
+.notification-row small,
+.report-metrics span,
+.announcement-full > p,
+.announcement-full > small,
+.announcement-full .tiny-overline,
+.attendance-times span,
+.attendance-times small,
+.audit-row p,
+.audit-row pre,
+.audit-row time,
+.empty-state,
+.empty-state h3,
+.error-page p,
+.back-link,
+.secure-note,
+.hero-meta,
+.demo-accounts p,
+.section-heading > a,
+th,
+td,
+td small {
+  color: var(--muted);
+}
+.notice-inline,
+.conflict-note strong,
+.conflict-note p,
+.attention-note strong,
+.attention-note p,
+.attention-note > a {
+  color: #705321;
+}
+.status {
+  white-space: normal;
+  line-height: 1.5;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.status.green {
+  color: #315525;
+}
+.status.amber {
+  color: #76551c;
+}
+.status.blue {
+  color: #315b70;
+}
+.status.gray {
+  color: #535b50;
+}
+.sidebar-user strong {
+  white-space: normal;
+}
+.nav-link > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.nav-link > svg {
+  flex-shrink: 0;
+}
+.form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+.audit-row pre {
+  font-family: inherit;
+}
+.activity-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+.dashboard-columns .activity-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dashboard-columns .activity-grid > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+.announcement-preview h3 {
+  font-size: 1.25rem;
+}
+.activity-tile h3 {
+  font-size: 1.375rem;
+  min-height: 0;
+}
+.activity-tile p {
+  flex-wrap: wrap;
+}
+.activity-tile-content {
+  padding: 20px;
+}
+.tile-status,
+.record-top,
+.between,
+.record-facts {
+  flex-wrap: wrap;
+}
+.tile-status .status,
+.tile-status .small {
+  font-size: 0.875rem;
+}
+.date-square {
+  width: 52px;
+}
+.date-square strong {
+  font-size: 1.375rem;
+}
+.section-heading h2 {
+  font-size: 1.5rem;
+}
+.field input,
+.field select,
+.field textarea {
+  min-height: 48px;
+  line-height: 1.5;
+}
+.form-message,
+.upload-field,
+.boundary-note,
+.registration-line,
+.profile-card,
+.record-card,
+.account-grid button,
+.demo-accounts code {
+  overflow-wrap: anywhere;
+}
+.registration-line {
+  flex-wrap: wrap;
+}
+.registration-line > div {
+  min-width: min(100%, 160px);
+}
+.attention-note > a {
+  white-space: normal;
+}
+.workspace-header {
+  min-height: 81px;
+  height: auto;
+  padding-block: 16px;
+  flex-wrap: wrap;
+}
+.workspace-header > div:first-child,
+.header-right {
+  flex-wrap: wrap;
+}
+.metrics-grid,
+.report-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+}
+.login-content {
+  max-width: 480px;
+}
+@media (min-width: 801px) {
+  .sidebar {
+    width: 280px;
+  }
+  .workspace {
+    margin-left: 280px;
+    width: calc(100% - 280px);
+  }
+}
+@media (max-width: 800px) {
+  .workspace-header {
+    min-height: 80px;
+  }
+  .mobile-bar .brand small {
+    max-width: 180px;
+  }
+  .audit-row {
+    flex-wrap: wrap;
+  }
+  .audit-row time {
+    white-space: normal;
+    text-align: left;
+  }
+}
+@media (max-width: 520px) {
+  .dashboard-columns .activity-grid {
+    grid-template-columns: 1fr;
+  }
+  .metrics-grid,
+  .report-metrics {
+    grid-template-columns: 1fr;
+  }
+  .account-grid {
+    grid-template-columns: 1fr;
+  }
+  .brand small {
+    max-width: 170px;
+  }
+  .public-nav {
+    flex-wrap: wrap;
+  }
+  .login-content h2 {
+    font-size: 2.25rem;
+    letter-spacing: -0.02em;
+  }
+}
+/* Minimal workspace: keep reading sizes, reduce decorative and repeated content. */
+.announcement-preview article > a {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink);
+  margin-top: 12px;
+}
+.announcement-preview article > a h3 {
+  margin: 0;
+}
+.announcement-preview article > a svg {
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.metric {
+  padding: 20px;
+}
+.metric > strong {
+  margin-bottom: 0;
+}
+.login-content {
+  margin-top: 48px;
+}
+.login-story > div {
+  padding-block: 40px;
+}
+@media (max-width: 520px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .metric {
+    padding: 16px;
+  }
+  .metric > div {
+    align-items: flex-start;
+  }
+  .metric > div > svg {
+    flex-shrink: 0;
+  }
+  .workspace-header {
+    flex-wrap: nowrap;
+    min-height: 64px;
+  }
+  .workspace-header strong {
+    font-size: 0.875rem;
+  }
+  .header-right {
+    flex-wrap: nowrap;
+    gap: 8px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

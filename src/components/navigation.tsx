@@ -18,7 +18,6 @@ import {
   Menu,
   X,
   LogOut,
-  ArrowUpRight,
   type LucideIcon,
 } from "lucide-react";
 import { Brand } from "./brand";
@@ -197,23 +196,6 @@ export function Navigation({ role, name, unread }: { role: Role; name: string; u
             ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="support-note">
-            <span className="tiny-overline">A MOMENT FOR YOU</span>
-            <p>
-              Faith grows in the
-              <br />
-              everyday.
-            </p>
-            <Link
-              href={
-                role === "student" || role === "staff"
-                  ? "/dashboard/announcements"
-                  : "/dashboard/notifications"
-              }
-            >
-              Stay connected <ArrowUpRight size={15} />
-            </Link>
-          </div>
           <div className="sidebar-user">
             <span className="avatar">
               {name
@@ -224,7 +206,6 @@ export function Navigation({ role, name, unread }: { role: Role; name: string; u
             </span>
             <div>
               <strong>{name}</strong>
-              <small>{roleLabels[role]}</small>
             </div>
             <form action={logoutAction}>
               <button className="icon-button" aria-label="Sign out">

@@ -55,12 +55,11 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
     return (
       <>
         <PageHeading
-          eyebrow="FAITH IN MOTION"
           title="Formation activities"
           description={
             staff
-              ? "Create meaningful experiences and keep every detail together."
-              : "Find your next moment of reflection, connection, and growth."
+              ? "Create and manage formation activities."
+              : "Check requirements before registering."
           }
         />
         {staff && (
@@ -196,11 +195,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   if (section === "profile")
     return (
       <>
-        <PageHeading
-          eyebrow="YOUR PLACE IN THE COMMUNITY"
-          title="My student profile"
-          description="Keep your formation profile current. Authorized staff review the details you submit."
-        />
+        <PageHeading title="My student profile" description="Submit your details for CFO review." />
         <div className="profile-layout">
           <section className="surface profile-card">
             <span className="large-avatar">
@@ -215,10 +210,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
             <Status>{profile?.status ?? "Not submitted"}</Status>
             <div className="profile-divider" />
             <ShieldCheck size={26} strokeWidth={1.3} />
-            <p className="small muted">
-              This profile supports CFO activities. Official academic records remain under the
-              Registrar’s authority.
-            </p>
+            <p className="small muted">Official academic records remain with the Registrar.</p>
           </section>
           <section className="surface form-surface">
             <h2>Profile details</h2>
@@ -240,10 +232,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                 <Field label="Section" name="section" value={profile?.section} />
                 <Field label="Contact email" name="contact" type="email" value={profile?.contact} />
               </div>
-              <p className="small muted">
-                Submitting changes returns the profile to pending verification. Verification follows
-                the university’s approved procedure.
-              </p>
+              <p className="small muted">Changes require staff verification.</p>
             </WorkflowForm>
           </section>
         </div>
@@ -254,7 +243,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
       <>
         <PageHeading
           title="Student profiles"
-          description="Review student-submitted details through the authorized university process."
+          description="Verify details or request corrections."
         />
         <SearchList
           placeholder="Search student name, ID Number, or department…"
@@ -308,18 +297,16 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
     return (
       <>
         <PageHeading
-          eyebrow={staff ? "CLEAR FEEDBACK, BETTER PREPARATION" : "EVERYTHING IN ONE PLACE"}
           title={staff ? "Submission review" : "My submissions"}
           description={
             staff
-              ? "Review documents for CFO requirements and give students actionable feedback."
-              : "Follow your registrations, upload requirements, and respond to staff feedback."
+              ? "Review documents and provide feedback."
+              : "Upload requirements and check staff feedback."
           }
         />
         <p className="boundary-note">
           <ShieldCheck size={17} />
-          Accepted means CFO requirements are met. Receipt images are supporting documents;
-          financial confirmation remains with the cashier.
+          CFO acceptance covers requirements only. Payment confirmation remains with the cashier.
         </p>
         <SearchList
           filters={["Submitted", "Under review", "Requires correction", "Accepted", "Withdrawn"]}
@@ -535,7 +522,6 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
     return (
       <>
         <PageHeading
-          eyebrow="MAKE SPACE FOR COMMUNITY"
           title="Facility requests"
           description={
             user.role === "approver"
@@ -650,11 +636,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
     );
     return (
       <>
-        <PageHeading
-          eyebrow="STAY IN THE LOOP"
-          title="Office announcements"
-          description="The latest formation updates, thoughtful reminders, and important details."
-        />
+        <PageHeading title="Office announcements" />
         {staff && (
           <details className="create-panel">
             <summary>
@@ -699,7 +681,6 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
       <>
         <PageHeading
           title="Your updates"
-          description="In-system notifications keep your next steps close at hand."
           action={<WorkflowForm intent="readNotifications" label="Mark all as read" secondary />}
         />
         <div className="surface">
@@ -723,9 +704,6 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
             />
           )}
         </div>
-        <p className="small muted">
-          These are in-system records. No email or SMS delivery is configured.
-        </p>
       </>
     );
   }
@@ -734,7 +712,6 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
     return (
       <>
         <PageHeading
-          eyebrow="A CLEARER VIEW"
           title="Formation reports"
           description={
             staff
@@ -882,10 +859,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   if (section === "audit")
     return (
       <>
-        <PageHeading
-          title="Audit history"
-          description="Important actions, their authors, and recorded changes in one place."
-        />
+        <PageHeading title="Audit history" />
         <SearchList
           placeholder="Search action, target, or actor…"
           items={db.audit.map((event) => ({

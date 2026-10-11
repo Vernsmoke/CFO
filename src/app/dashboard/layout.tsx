@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, ChevronRight } from "lucide-react";
+import { Bell } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/store";
 import { Navigation } from "@/components/navigation";
@@ -17,12 +17,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="workspace">
         <header className="workspace-header">
           <div>
-            <span>Christian Formation Office</span>
-            <ChevronRight size={13} />
-            <strong>Your workspace</strong>
+            <strong>Christian Formation Office</strong>
           </div>
           <div className="header-right">
-            <span className="term-label">Academic year 2026–2027</span>
             <Link
               className="notification-button"
               href="/dashboard/notifications"
@@ -44,11 +41,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {children}
         </main>
         <footer className="workspace-footer">
-          <span>University of La Salette, Inc. · Christian Formation Office</span>
           <span>
             {process.env.DEMO_MODE === "true"
               ? "Fictional pilot · Local preview"
-              : "Faith. Formation. Community."}
+              : "University of La Salette, Inc."}
           </span>
         </footer>
       </div>
