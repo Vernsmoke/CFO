@@ -178,6 +178,17 @@ export function Navigation({
       if (media.matches) toggle?.focus();
     };
   }, [open]);
+  const groups = [
+    {
+      label: "Daily work",
+      paths: ["", "/activities", "/submissions", "/profiles", "/attendance", "/facilities"],
+    },
+    { label: "Updates", paths: ["/announcements", "/notifications"] },
+    {
+      label: "Records & settings",
+      paths: ["/profile", "/reports", "/accounts", "/audit", "/settings"],
+    },
+  ];
   return (
     <>
       <div className="mobile-bar" ref={mobileBarRef}>
@@ -239,29 +250,40 @@ export function Navigation({
         </button>
         <div className="workspace-label">{roleLabels[role]}</div>
         <nav aria-label="Workspace navigation">
-          {entries
-            .filter((e) => e.roles.includes(role))
-            .map(({ title, path, icon: Icon }) => (
-              <Link
-                href={`/dashboard${path}`}
-                key={path}
-                aria-label={title}
-                aria-describedby={tooltip?.label === title ? "navigation-tooltip" : undefined}
-                onMouseEnter={(event) => showTooltip(event.currentTarget, title)}
-                onMouseLeave={hideTooltip}
-                onFocus={(event) => showTooltip(event.currentTarget, title, true)}
-                onBlur={hideTooltip}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") hideTooltip();
-                }}
-                aria-current={pathname === `/dashboard${path}` ? "page" : undefined}
-                onClick={() => setOpen(false)}
-                className={`nav-link ${pathname === `/dashboard${path}` ? "active" : ""}`}
-              >
-                <Icon size={19} strokeWidth={1.7} />
-                <span>{title}</span>
-                {path === "/notifications" && unread > 0 && <b>{unread}</b>}
-              </Link>
+          {groups
+            .filter((group) =>
+              entries.some(
+                (entry) => group.paths.includes(entry.path) && entry.roles.includes(role),
+              ),
+            )
+            .map((group) => (
+              <div className="nav-group" key={group.label}>
+                <p className="nav-group-label">{group.label}</p>
+                {entries
+                  .filter((e) => e.roles.includes(role) && group.paths.includes(e.path))
+                  .map(({ title, path, icon: Icon }) => (
+                    <Link
+                      href={`/dashboard${path}`}
+                      key={path}
+                      aria-label={title}
+                      aria-describedby={tooltip?.label === title ? "navigation-tooltip" : undefined}
+                      onMouseEnter={(event) => showTooltip(event.currentTarget, title)}
+                      onMouseLeave={hideTooltip}
+                      onFocus={(event) => showTooltip(event.currentTarget, title, true)}
+                      onBlur={hideTooltip}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") hideTooltip();
+                      }}
+                      aria-current={pathname === `/dashboard${path}` ? "page" : undefined}
+                      onClick={() => setOpen(false)}
+                      className={`nav-link ${pathname === `/dashboard${path}` ? "active" : ""}`}
+                    >
+                      <Icon size={19} strokeWidth={1.7} />
+                      <span>{title}</span>
+                      {path === "/notifications" && unread > 0 && <b>{unread}</b>}
+                    </Link>
+                  ))}
+              </div>
             ))}
         </nav>
         <div className="sidebar-bottom">

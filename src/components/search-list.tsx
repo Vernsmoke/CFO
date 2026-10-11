@@ -1,6 +1,8 @@
 "use client";
 import { useRef, type ReactNode } from "react";
-import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Status } from "./ui";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Empty } from "./ui";
 import { RefreshRecords } from "./record-tools";
@@ -18,6 +20,9 @@ export function SearchList({
 }: {
   items: {
     key: string;
+    title?: string;
+    summary?: string;
+    status?: string;
     search: string;
     filter?: string;
     date?: string;
@@ -32,6 +37,17 @@ export function SearchList({
   pageSize?: number;
 }) {
   const params = useSearchParams();
+  const pathname = usePathname();
+  const record = params.get("record");
+  const selected = items.find((item) => item.key === record);
+  const listParams = new URLSearchParams(params.toString());
+  listParams.delete("record");
+  const listHref = `${pathname}${listParams.size ? `?${listParams}` : ""}`;
+  const recordHref = (key: string) => {
+    const next = new URLSearchParams(params.toString());
+    next.set("record", key);
+    return `${pathname}?${next}`;
+  };
   const query = params.get("q") ?? "";
   const filter = params.get("filter") ?? "All";
   const from = dates ? (params.get("from") ?? "") : "";
@@ -77,6 +93,22 @@ export function SearchList({
     );
     searchRef.current?.focus();
   };
+  if (record)
+    return (
+      <section className="record-workspace">
+        <Link className="back-link record-back" href={listHref}>
+          ← Back to list
+        </Link>
+        {selected ? (
+          selected.content
+        ) : (
+          <Empty
+            title="Record unavailable"
+            description="This record is no longer available or you do not have access to it. Return to the list to continue."
+          />
+        )}
+      </section>
+    );
   return (
     <>
       <div className="list-toolbar">
@@ -206,7 +238,28 @@ export function SearchList({
       {visible.length ? (
         <div className={className}>
           {visible.slice((page - 1) * pageSize, page * pageSize).map((item) => (
-            <div key={item.key}>{item.content}</div>
+            <div key={item.key}>
+              {item.title ? (
+                <article className="record-summary">
+                  <div>
+                    <h2>
+                      <Link href={recordHref(item.key)}>{item.title}</Link>
+                    </h2>
+                    {item.summary && <p>{item.summary}</p>}
+                  </div>
+                  {item.status && <Status>{item.status}</Status>}
+                  <Link
+                    className="button secondary"
+                    href={recordHref(item.key)}
+                    aria-label={`Open ${item.title}`}
+                  >
+                    Open record
+                  </Link>
+                </article>
+              ) : (
+                item.content
+              )}
+            </div>
           ))}
         </div>
       ) : (

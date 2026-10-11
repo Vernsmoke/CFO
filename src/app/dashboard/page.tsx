@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WorkspaceTasks } from "@/components/workspace-tasks";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -181,47 +182,7 @@ export default async function DashboardPage() {
           ) : undefined
         }
       />
-      <div className={`metrics-grid ${metrics.length === 2 ? "two" : ""}`}>
-        {metrics.map(({ label, value, icon: Icon, href }) => (
-          <Link href={`/dashboard${href}`} key={label} className="metric">
-            <div>
-              <span>{label}</span>
-              <Icon size={20} strokeWidth={1.6} />
-            </div>
-            <strong>{String(value).padStart(2, "0")}</strong>
-          </Link>
-        ))}
-      </div>
-      {staff && (
-        <section className="surface staff-task-queue">
-          <h2>Needs review</h2>
-          <Link href="/dashboard/profiles?filter=Pending+verification">
-            Profiles{" "}
-            <strong>{db.profiles.filter((p) => p.status === "Pending verification").length}</strong>
-          </Link>
-          <Link href="/dashboard/submissions?filter=Submitted">
-            New submissions{" "}
-            <strong>{db.registrations.filter((r) => r.status === "Submitted").length}</strong>
-          </Link>
-          <Link href="/dashboard/submissions?filter=Under+review">
-            Under review{" "}
-            <strong>{db.registrations.filter((r) => r.status === "Under review").length}</strong>
-          </Link>
-        </section>
-      )}
-      {student && registrations.some((r) => r.status === "Requires correction") && (
-        <div className="attention-note">
-          <span className="soft-icon amber-icon">
-            <FileCheck2 size={20} />
-          </span>
-          <div>
-            <strong>Your submission needs a correction.</strong>
-          </div>
-          <Link href="/dashboard/submissions">
-            Review submission <ArrowRightIcon />
-          </Link>
-        </div>
-      )}
+      <WorkspaceTasks user={user} db={db} />
       {student || staff ? (
         <div className="dashboard-columns">
           <div>
@@ -288,9 +249,20 @@ export default async function DashboardPage() {
           </aside>
         </div>
       ) : null}
+      <section className="dashboard-summary">
+        <h2>At a glance</h2>
+        <div className={`metrics-grid ${metrics.length === 2 ? "two" : ""}`}>
+          {metrics.map(({ label, value, icon: Icon, href }) => (
+            <Link href={`/dashboard${href}`} key={label} className="metric">
+              <div>
+                <span>{label}</span>
+                <Icon size={20} strokeWidth={1.6} />
+              </div>
+              <strong>{String(value).padStart(2, "0")}</strong>
+            </Link>
+          ))}
+        </div>
+      </section>
     </>
   );
-}
-function ArrowRightIcon() {
-  return <ChevronRight size={16} />;
 }

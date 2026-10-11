@@ -84,7 +84,7 @@ export function Landing() {
             Sign in
           </Link>
           <Link href="/login" className="button">
-            Open workspace <ArrowUpRight size={18} />
+            Sign in <ArrowUpRight size={18} />
           </Link>
         </nav>
         <button
@@ -109,15 +109,15 @@ export function Landing() {
               <span>All in one place.</span>
             </h1>
             <p>
-              Make room for what matters. Find your activities, prepare your requirements, and stay
-              connected to your Salettinian community.
+              The University of La Salette’s workspace for formation activities, documents,
+              attendance, and facility requests. Sign in with your University ID to get started.
             </p>
             <Link href="/login" className="button">
-              Enter your workspace <ArrowRight size={20} />
+              Sign in to your workspace <ArrowRight size={20} />
             </Link>
             <div className="site-hero-note">
               <Cross size={18} />
-              <span>Rooted in faith. Growing together.</span>
+              <span>Need help signing in? Contact the Christian Formation Office.</span>
             </div>
           </div>
           <div className="journey-demo">
@@ -276,7 +276,18 @@ export function Landing() {
       <footer className="site-footer">
         <div className="site-container">
           <Brand light />
-          <span>University of La Salette, Inc.</span>
+          <div className="university-identity">
+            <img
+              src="/images/uls-logo.png"
+              alt="University of La Salette, Inc. seal"
+              width={80}
+              height={80}
+            />
+            <div>
+              <span>University of La Salette, Inc.</span>
+              <small>Santiago City, Philippines</small>
+            </div>
+          </div>
           <small>Local pilot · Fictional records</small>
         </div>
       </footer>

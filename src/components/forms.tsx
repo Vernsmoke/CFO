@@ -12,6 +12,8 @@ import {
   type ReactNode,
 } from "react";
 import { LoaderCircle, CheckCircle2, AlertCircle, Eye, EyeOff, CalendarDays } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { loginAction, workflowAction } from "@/app/actions";
 import type { ActionResult } from "@/lib/types";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -36,6 +38,12 @@ export function WorkflowForm({
   secondary?: boolean;
   draftKey?: string;
 }) {
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const backParams = new URLSearchParams(params.toString());
+  backParams.delete("record");
+  backParams.delete("create");
+  const cancelHref = `${pathname}${backParams.size ? `?${backParams}` : ""}`;
   const [state, action, pending] = useActionState(workflowAction, {
     ok: false,
     message: "",
@@ -140,19 +148,40 @@ export function WorkflowForm({
         )}
         {id && <input type="hidden" name="id" value={id} />}
         {children}
-        <button
-          ref={submitRef}
-          className={`button ${secondary ? "secondary" : ""}`}
-          disabled={pending}
-          type="submit"
-        >
-          {pending && <LoaderCircle size={16} className="spin" />}
-          {pending ? (intent === "attendance" ? "Recording…" : "Saving…") : label}
-        </button>
+        <div className="form-actions">
+          <button
+            ref={submitRef}
+            className={`button ${secondary ? "secondary" : ""}`}
+            disabled={pending}
+            type="submit"
+          >
+            {pending && <LoaderCircle size={16} className="spin" />}
+            {pending ? (intent === "attendance" ? "Recording…" : "Saving…") : label}
+          </button>
+          {children && (params.has("record") || params.has("create")) && (
+            <Link className="button secondary" href={cancelHref}>
+              Cancel
+            </Link>
+          )}
+        </div>
         {state.message && (
           <p className={`form-message ${state.ok ? "success" : "error"}`} role="status">
             {state.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-            {state.message}
+            <span>
+              {state.message}
+              {state.ok &&
+                ["upload", "register", "profile", "requestFacility"].includes(intent) && (
+                  <small className="form-next-step">
+                    {intent === "upload"
+                      ? "CFO staff will review your document. You can track its status in this record."
+                      : intent === "register"
+                        ? "Open My submissions to check your requirements and upload documents."
+                        : intent === "profile"
+                          ? "CFO staff will verify your details. Check this page for feedback."
+                          : "Your request is awaiting a decision. Check Facility requests for updates."}
+                  </small>
+                )}
+            </span>
           </p>
         )}
         {safety.draftNotice && (

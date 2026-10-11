@@ -39,6 +39,44 @@ export function Status({ children }: { children: string }) {
     </span>
   );
 }
+export function StatusGuide({
+  status,
+  kind,
+}: {
+  status: string;
+  kind: "submission" | "profile" | "facility";
+}) {
+  const guides: Record<string, Record<string, string>> = {
+    submission: {
+      Submitted: "Next: check your document checklist. CFO staff will review your submission.",
+      "Under review": "CFO staff are reviewing this submission. Check here for feedback.",
+      "Requires correction":
+        "Student action needed: read the feedback and replace the requested documents below.",
+      Accepted:
+        "CFO has accepted the requirements. Check the activity schedule; acceptance does not confirm payment or attendance.",
+      Withdrawn:
+        "This registration is withdrawn. Contact CFO if you need help with another registration.",
+    },
+    profile: {
+      "Not submitted": "Next: complete your details and submit them for verification.",
+      "Pending verification":
+        "CFO staff will check your details. You can return here to see their decision.",
+      "Correction requested": "Next: read the staff note, correct your details, and submit again.",
+      Verified: "Your profile has been verified. Any changes will need another staff review.",
+    },
+    facility: {
+      Pending:
+        "The approver will check the schedule and make a decision. This request is not yet a confirmed booking.",
+      Approved: "This booking is approved. Check the confirmed facility and times below.",
+      "Returned for correction":
+        "Requester action needed: read the feedback, update the request, and resubmit.",
+      Rejected:
+        "This request was not approved. Read the decision note before making another request.",
+    },
+  };
+  const message = guides[kind][status];
+  return message ? <p className="status-guide">{message}</p> : null;
+}
 export function PageHeading({
   eyebrow,
   title,
@@ -108,7 +146,10 @@ export function ActivityTile({
 }) {
   const date = new Date(`${activity.date}T12:00:00Z`);
   return (
-    <Link href="/dashboard/activities" className="activity-tile">
+    <Link
+      href={`/dashboard/activities?record=${encodeURIComponent(activity.id)}`}
+      className="activity-tile"
+    >
       <span className="activity-date">
         <small>{date.toLocaleString("en", { month: "short", timeZone: "UTC" })}</small>
         <strong>{date.getUTCDate()}</strong>
@@ -158,11 +199,11 @@ export function RegistrationLine({
       </div>
       <Status>{registration.status}</Status>
       <Link
-        href="/dashboard/submissions"
-        className="icon-button"
+        href={`/dashboard/submissions?record=${encodeURIComponent(registration.id)}`}
+        className="text-link"
         aria-label={`View submission ${registration.id}`}
       >
-        <ArrowUpRight size={19} />
+        View details <ArrowUpRight size={19} />
       </Link>
     </div>
   );

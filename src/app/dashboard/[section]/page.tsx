@@ -19,6 +19,7 @@ import {
   formatTime,
   PageHeading,
   Status,
+  StatusGuide,
 } from "@/components/ui";
 import { Field, Select, Textarea, WorkflowForm } from "@/components/forms";
 import { SearchList } from "@/components/search-list";
@@ -97,8 +98,8 @@ export default async function SectionPage({
               : "Check requirements before registering."
           }
         />
-        {staff && (
-          <details className="create-panel">
+        {staff && !query.record && (
+          <details className="create-panel" id="create" open={query.create === "true"}>
             <summary>
               Create a formation activity <ArrowUpRight size={18} />
             </summary>
@@ -171,6 +172,9 @@ export default async function SectionPage({
             ).length;
             return {
               key: activity.id,
+              title: activity.title,
+              summary: `${formatDate(activity.date)} · ${activity.time} · ${activity.venue}`,
+              status: activity.status,
               search: `${activity.title} ${activity.venue} ${activity.type}`,
               filter: activity.type,
               date: activity.date,
@@ -249,7 +253,7 @@ export default async function SectionPage({
                           )}
                         </div>
                         <Link
-                          href={`/dashboard/submissions?q=${encodeURIComponent(registration.id)}`}
+                          href={`/dashboard/submissions?record=${encodeURIComponent(registration.id)}`}
                           className="text-link"
                         >
                           View my submission
@@ -292,6 +296,7 @@ export default async function SectionPage({
             <h2>{user.name}</h2>
             <p>{user.universityId}</p>
             <Status>{profile?.status ?? "Not submitted"}</Status>
+            <StatusGuide status={profile?.status ?? "Not submitted"} kind="profile" />
             <div className="profile-divider" />
             <ShieldCheck size={26} strokeWidth={1.3} />
             <p className="small muted">Official academic records remain with the Registrar.</p>
@@ -335,6 +340,9 @@ export default async function SectionPage({
           dimensions={[departmentFilter]}
           items={db.profiles.map((p) => ({
             key: p.userId,
+            title: nameFor(p.userId),
+            summary: `${idFor(p.userId)} · ${p.department}`,
+            status: p.status,
             search: `${nameFor(p.userId)} ${idFor(p.userId)} ${p.department}`,
             filter: p.status,
             values: { department: p.department },
@@ -406,6 +414,9 @@ export default async function SectionPage({
             const documents = db.documents.filter((d) => d.registrationId === r.id);
             return {
               key: r.id,
+              title: activity?.title ?? "Formation activity",
+              summary: `${r.id} · ${staff ? nameFor(r.userId) : "Submitted"} · ${formatDate(r.submittedAt)}`,
+              status: r.status,
               search: `${r.id} ${activity?.title} ${staff ? nameFor(r.userId) : ""}`,
               filter: r.status,
               date: manilaDay(r.submittedAt),
@@ -426,6 +437,7 @@ export default async function SectionPage({
                     </div>
                     <Status>{r.status}</Status>
                   </div>
+                  <StatusGuide status={r.status} kind="submission" />
                   <div className="requirement-box">
                     <strong>Required for this activity</strong>
                     <p>{activity?.requirements}</p>
@@ -492,6 +504,8 @@ export default async function SectionPage({
                           id: d.id,
                           filename: d.filename,
                           requirement: d.requirement,
+                          status: d.status,
+                          note: d.note,
                         }))}
                       />
                       <details className="withdraw-details">
@@ -709,8 +723,8 @@ export default async function SectionPage({
             )
             .map(({ facility, start, end, status }) => ({ facility, start, end, status }))}
         />
-        {user.role === "representative" && (
-          <details className="create-panel">
+        {user.role === "representative" && !query.record && (
+          <details className="create-panel" id="create" open={query.create === "true"}>
             <summary>
               Request a facility <ArrowUpRight size={18} />
             </summary>
@@ -753,6 +767,9 @@ export default async function SectionPage({
             const collision = user.role === "approver" ? conflicts(r, db.facilities) : [];
             return {
               key: r.id,
+              title: r.purpose,
+              summary: `${r.facility} · ${formatTime(r.start)} · ${formatDate(r.start)}`,
+              status: r.status,
               search: `${r.facility} ${r.purpose}`,
               date: manilaDay(r.start),
               values: { facility: r.facility },
@@ -776,6 +793,7 @@ export default async function SectionPage({
                       {formatDate(r.start) !== formatDate(r.end) ? ` (${formatDate(r.end)})` : ""}
                     </span>
                   </div>
+                  <StatusGuide status={r.status} kind="facility" />
                   {r.note && <p className="notice-inline">Decision note: {r.note}</p>}
                   {collision.length > 0 && (
                     <div className="conflict-note">
@@ -838,7 +856,7 @@ export default async function SectionPage({
       <>
         <PageHeading title="Office announcements" />
         {staff && (
-          <details className="create-panel">
+          <details className="create-panel" id="create" open={query.create === "true"}>
             <summary>
               Publish an announcement
               <ArrowUpRight size={18} />
@@ -1045,6 +1063,9 @@ export default async function SectionPage({
           placeholder="Search account name, ID Number, or role…"
           items={db.users.map((u) => ({
             key: u.id,
+            title: u.name,
+            summary: `${u.universityId} · ${u.role}`,
+            status: u.active ? "Active" : "Disabled",
             search: `${u.name} ${u.universityId} ${u.role}`,
             content: (
               <article className="surface record-card">
