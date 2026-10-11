@@ -14,32 +14,40 @@ export function clearDrafts() {
   }
 }
 function snapshot(form: HTMLFormElement) {
+  // Empty file inputs receive a fresh lastModified timestamp on each FormData read.
   return JSON.stringify(
     [...new FormData(form)]
       .filter(([name]) => !["confirmed", "reason", "confirmationReason"].includes(name))
       .map(([name, value]) => [
         name,
-        typeof value === "string" ? value : `${value.name}:${value.size}:${value.lastModified}`,
+        typeof value === "string"
+          ? value
+          : value.name === "" && value.size === 0
+            ? ""
+            : `${value.name}:${value.size}:${value.lastModified}`,
       ]),
   );
 }
 export function useFormSafety(ref: RefObject<HTMLFormElement | null>, draftKey?: string) {
-  const baseline = useRef("");
+  const baseline = useRef<{
+    form: HTMLFormElement;
+    draftKey?: string;
+    value: string;
+  } | null>(null);
   const bypass = useRef(false);
-  const hasChanges = useRef(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [leave, setLeave] = useState<(() => void) | null>(null);
   const [draftNotice, setDraftNotice] = useState("");
   useEffect(() => {
     const form = ref.current!;
-    baseline.current = snapshot(form);
+    // Keep the original values when React re-runs effects after restoring a draft.
+    if (baseline.current?.form !== form || baseline.current.draftKey !== draftKey)
+      baseline.current = { form, draftKey, value: snapshot(form) };
     bypass.current = false;
-    hasChanges.current = false;
     if (draftKey) {
       try {
         const stored = JSON.parse(sessionStorage.getItem(prefix + draftKey) ?? "null");
         if (stored?.expires > Date.now() && stored.fields && typeof stored.fields === "object") {
-          hasChanges.current = true;
           for (const [name, value] of Object.entries(stored.fields)) {
             const field = form.elements.namedItem(name);
             if (
@@ -58,8 +66,7 @@ export function useFormSafety(ref: RefObject<HTMLFormElement | null>, draftKey?:
         /* A malformed or unavailable draft never blocks editing. */
       }
     }
-    const dirty = () =>
-      !bypass.current && (hasChanges.current || snapshot(form) !== baseline.current);
+    const dirty = () => !bypass.current && snapshot(form) !== baseline.current?.value;
     const unload = (event: BeforeUnloadEvent) => {
       if (dirty()) {
         event.preventDefault();
@@ -136,7 +143,6 @@ export function useFormSafety(ref: RefObject<HTMLFormElement | null>, draftKey?:
   }, [ref, draftKey]);
   const changed = () => {
     bypass.current = false;
-    hasChanges.current = true;
     if (!draftKey || !ref.current) return;
     const fields = Object.fromEntries(
       [...new FormData(ref.current)].filter(([name, value]) => {
@@ -163,8 +169,7 @@ export function useFormSafety(ref: RefObject<HTMLFormElement | null>, draftKey?:
   };
   const saved = useCallback(() => {
     bypass.current = true;
-    hasChanges.current = false;
-    if (ref.current) baseline.current = snapshot(ref.current);
+    if (ref.current && baseline.current) baseline.current.value = snapshot(ref.current);
     if (draftKey) {
       try {
         sessionStorage.removeItem(prefix + draftKey);
