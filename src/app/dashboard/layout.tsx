@@ -13,11 +13,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <a href="#workspace-content" className="skip-link">
         Skip to content
       </a>
-      <Navigation role={user.role} name={user.name} unread={unread} />
+      <Navigation role={user.role} name={user.name} unread={unread} branding={db.settings} />
       <div className="workspace">
         <header className="workspace-header">
           <div>
-            <strong>Christian Formation Office</strong>
+            <strong>{db.settings?.officeName ?? "Christian Formation Office"}</strong>
           </div>
           <div className="header-right">
             <Link

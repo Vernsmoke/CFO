@@ -4,13 +4,15 @@ import { ArrowLeft } from "lucide-react";
 import { currentUser } from "@/lib/auth";
 import { Brand } from "@/components/brand";
 import { LoginForm } from "@/components/forms";
+import { readDb } from "@/lib/store";
 export default async function LoginPage() {
   if (await currentUser()) redirect("/dashboard");
+  const db = await readDb();
   return (
     <main className="login-page">
       <section className="login-story">
         <Link href="/">
-          <Brand light />
+          <Brand light branding={db.settings} />
         </Link>
         <div>
           <h1>

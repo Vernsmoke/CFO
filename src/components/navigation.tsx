@@ -18,11 +18,16 @@ import {
   Menu,
   X,
   LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import { Brand } from "./brand";
 import { logoutAction } from "@/app/actions";
 import type { Role } from "@/lib/types";
+import { ThemeControl, usePreference } from "./preferences";
+import { clearDrafts } from "./use-form-safety";
 
 export const roleLabels: Record<Role, string> = {
   student: "Student workspace",
@@ -60,6 +65,7 @@ const entries: { title: string; path: string; icon: LucideIcon; roles: Role[] }[
   { title: "Reports", path: "/reports", icon: ChartNoAxesCombined, roles: ["staff", "viewer"] },
   { title: "Accounts & roles", path: "/accounts", icon: Shield, roles: ["admin"] },
   { title: "Audit history", path: "/audit", icon: History, roles: ["staff", "admin"] },
+  { title: "Office settings", path: "/settings", icon: Settings, roles: ["admin"] },
   {
     title: "Notifications",
     path: "/notifications",
@@ -67,9 +73,51 @@ const entries: { title: string; path: string; icon: LucideIcon; roles: Role[] }[
     roles: ["student", "staff", "representative", "approver", "admin", "viewer"],
   },
 ];
-export function Navigation({ role, name, unread }: { role: Role; name: string; unread: number }) {
+export function Navigation({
+  role,
+  name,
+  unread,
+  branding,
+}: {
+  role: Role;
+  name: string;
+  unread: number;
+  branding?: { officeName: string; logo?: string; updatedAt?: string };
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [preference, setPreference] = usePreference("sidebar", "expanded");
+  const collapsed = preference === "compact";
+  const [tooltip, setTooltip] = useState<{ label: string; top: number } | null>(null);
+  const tooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function hideTooltip() {
+    if (tooltipTimer.current) clearTimeout(tooltipTimer.current);
+    setTooltip(null);
+  }
+  function showTooltip(element: HTMLElement, label: string, immediate = false) {
+    hideTooltip();
+    if (!collapsed || !window.matchMedia("(min-width: 801px)").matches) return;
+    const top = Math.min(
+      window.innerHeight - 32,
+      Math.max(24, element.getBoundingClientRect().top + element.offsetHeight / 2),
+    );
+    const reveal = () => setTooltip({ label, top });
+    if (immediate) reveal();
+    else tooltipTimer.current = setTimeout(reveal, 180);
+  }
+  useEffect(() => {
+    const shell = document.querySelector<HTMLElement>(".app-shell");
+    if (shell) shell.dataset.compact = String(collapsed);
+    return () => {
+      if (shell) delete shell.dataset.compact;
+    };
+  }, [collapsed]);
+  useEffect(
+    () => () => {
+      if (tooltipTimer.current) clearTimeout(tooltipTimer.current);
+    },
+    [],
+  );
   const sidebarRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const mobileBarRef = useRef<HTMLDivElement>(null);
@@ -133,7 +181,7 @@ export function Navigation({ role, name, unread }: { role: Role; name: string; u
   return (
     <>
       <div className="mobile-bar" ref={mobileBarRef}>
-        <Brand compact />
+        <Brand compact branding={branding} />
         <button
           className="icon-button"
           ref={toggleRef}
@@ -158,7 +206,7 @@ export function Navigation({ role, name, unread }: { role: Role; name: string; u
       <aside
         id="workspace-navigation"
         ref={sidebarRef}
-        className={`sidebar ${open ? "open" : ""}`}
+        className={`sidebar ${open ? "open" : ""} ${collapsed ? "compact" : ""}`}
         role={open ? "dialog" : undefined}
         aria-modal={open ? true : undefined}
         aria-label={open ? roleLabels[role] : undefined}
@@ -175,8 +223,20 @@ export function Navigation({ role, name, unread }: { role: Role; name: string; u
           </button>
         </div>
         <Link href="/" className="sidebar-brand">
-          <Brand compact />
+          <Brand compact branding={branding} />
         </Link>
+        <button
+          type="button"
+          className="sidebar-collapse"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          onClick={() => {
+            hideTooltip();
+            setPreference(collapsed ? "expanded" : "compact");
+          }}
+        >
+          {collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+          <span>Collapse menu</span>
+        </button>
         <div className="workspace-label">{roleLabels[role]}</div>
         <nav aria-label="Workspace navigation">
           {entries
@@ -185,6 +245,15 @@ export function Navigation({ role, name, unread }: { role: Role; name: string; u
               <Link
                 href={`/dashboard${path}`}
                 key={path}
+                aria-label={title}
+                aria-describedby={tooltip?.label === title ? "navigation-tooltip" : undefined}
+                onMouseEnter={(event) => showTooltip(event.currentTarget, title)}
+                onMouseLeave={hideTooltip}
+                onFocus={(event) => showTooltip(event.currentTarget, title, true)}
+                onBlur={hideTooltip}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") hideTooltip();
+                }}
                 aria-current={pathname === `/dashboard${path}` ? "page" : undefined}
                 onClick={() => setOpen(false)}
                 className={`nav-link ${pathname === `/dashboard${path}` ? "active" : ""}`}
@@ -196,6 +265,7 @@ export function Navigation({ role, name, unread }: { role: Role; name: string; u
             ))}
         </nav>
         <div className="sidebar-bottom">
+          <ThemeControl />
           <div className="sidebar-user">
             <span className="avatar">
               {name
@@ -207,7 +277,7 @@ export function Navigation({ role, name, unread }: { role: Role; name: string; u
             <div>
               <strong>{name}</strong>
             </div>
-            <form action={logoutAction}>
+            <form action={logoutAction} data-leave="true" onSubmit={clearDrafts}>
               <button className="icon-button" aria-label="Sign out">
                 <LogOut size={17} />
               </button>
@@ -215,6 +285,16 @@ export function Navigation({ role, name, unread }: { role: Role; name: string; u
           </div>
         </div>
       </aside>
+      {tooltip && (
+        <div
+          id="navigation-tooltip"
+          role="tooltip"
+          className="navigation-tooltip"
+          style={{ top: tooltip.top }}
+        >
+          {tooltip.label}
+        </div>
+      )}
     </>
   );
 }
