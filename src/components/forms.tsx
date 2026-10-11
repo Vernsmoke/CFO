@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, type ReactNode } from "react";
-import { LoaderCircle, CheckCircle2, AlertCircle } from "lucide-react";
+import { useActionState, useState, type ReactNode } from "react";
+import { LoaderCircle, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { loginAction, workflowAction } from "@/app/actions";
 import type { ActionResult } from "@/lib/types";
 
@@ -51,6 +51,7 @@ export function Field({
   placeholder,
   max,
   min,
+  autoComplete,
 }: {
   label: string;
   name: string;
@@ -60,6 +61,7 @@ export function Field({
   placeholder?: string;
   max?: number | string;
   min?: number | string;
+  autoComplete?: string;
 }) {
   return (
     <label className="field">
@@ -72,6 +74,7 @@ export function Field({
         placeholder={placeholder}
         max={max}
         min={min}
+        autoComplete={autoComplete}
         maxLength={type === "text" ? 200 : undefined}
       />
     </label>
@@ -118,23 +121,42 @@ export function Textarea({
   );
 }
 export function LoginForm({ demoPassword }: { demoPassword?: string }) {
+  const [showPassword, setShowPassword] = useState(false);
   const [state, action, pending] = useActionState(loginAction, {
     ok: false,
     message: "",
   } as ActionResult);
   return (
     <form action={action} className="login-form">
-      <Field label="University ID Number" name="universityId" placeholder="e.g. 2024-0001" />
-      <label className="field">
-        <span>Password</span>
-        <input
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          maxLength={128}
-        />
-      </label>
+      <Field
+        label="University ID Number"
+        name="universityId"
+        placeholder="e.g. 2024-0001"
+        autoComplete="username"
+      />
+      <div className="field">
+        <label htmlFor="login-password">Password</label>
+        <div className="password-input">
+          <input
+            id="login-password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            required
+            autoComplete="current-password"
+            maxLength={128}
+          />
+          <button
+            type="button"
+            className="password-toggle"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-controls="login-password"
+            aria-pressed={showPassword}
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+      </div>
       <button className="button" disabled={pending}>
         {pending ? "Signing in…" : "Sign in to your workspace"}
         {pending && <LoaderCircle size={16} className="spin" />}

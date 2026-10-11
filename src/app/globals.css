@@ -3428,6 +3428,136 @@ th:not(:first-child) {
     font-size: 38px;
   }
 }
+/* Keyboard and touch controls for workspace tasks. */
+.mobile-drawer-heading {
+  display: none;
+}
+.field > label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7b5f;
+}
+.password-input {
+  position: relative;
+  width: 100%;
+}
+.password-input input {
+  padding-right: 52px;
+}
+.password-toggle,
+.search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  color: #526b43;
+  border-radius: 6px;
+}
+.password-toggle {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.password-toggle:hover,
+.search-clear:hover {
+  background: #edf2e5;
+}
+.search-field {
+  flex-wrap: nowrap;
+  min-height: 48px;
+  padding-block: 2px;
+}
+.search-field:focus-within {
+  border-color: #829973;
+  outline: 2px solid #829973;
+  outline-offset: 2px;
+}
+.search-field input {
+  min-height: 44px;
+}
+.search-field input::-webkit-search-cancel-button {
+  display: none;
+}
+.reset-filters {
+  color: #526b43;
+  min-height: 44px;
+  padding: 8px;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.list-toolbar {
+  flex-wrap: wrap;
+}
+.result-count {
+  color: #627255;
+}
+.notification-button {
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+}
+.notification-button i {
+  right: 12px;
+  top: 10px;
+}
+@media (max-width: 800px) {
+  .sidebar {
+    visibility: hidden;
+    overscroll-behavior: contain;
+    width: min(300px, calc(100vw - 44px));
+    padding-top: 12px;
+  }
+  .sidebar.open {
+    visibility: visible;
+  }
+  .mobile-drawer-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding-left: 13px;
+    font-size: 18px;
+  }
+  .mobile-bar .icon-button,
+  .mobile-drawer-heading .icon-button,
+  .sidebar-user .icon-button {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+  .sidebar-shade {
+    height: auto;
+  }
+  .result-count {
+    display: inline;
+    font-size: 13px;
+  }
+  .filter-field {
+    min-height: 48px;
+  }
+  .filter-field select {
+    min-height: 28px;
+  }
+  .field input,
+  .field select,
+  .field textarea,
+  .search-field input,
+  .filter-field select {
+    font-size: 16px;
+  }
+  .workflow-form > .button {
+    min-height: 44px;
+  }
+  .search-field {
+    padding-block: 2px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

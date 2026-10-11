@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -71,12 +71,76 @@ const entries: { title: string; path: string; icon: LucideIcon; roles: Role[] }[
 export function Navigation({ role, name, unread }: { role: Role; name: string; unread: number }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const mobileBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const media = window.matchMedia("(max-width: 800px)");
+    if (!media.matches) return;
+    const sidebar = sidebarRef.current!;
+    const toggle = toggleRef.current;
+    const workspace = document.querySelector<HTMLElement>(".workspace");
+    const skipLink = document.querySelector<HTMLElement>(".skip-link");
+    const background = [workspace, skipLink, mobileBarRef.current].filter(
+      (element): element is HTMLElement => element !== null,
+    );
+    const previousInert = background.map((element) => element.inert);
+    const previousOverflow = document.body.style.overflow;
+    background.forEach((element) => {
+      element.inert = true;
+    });
+    document.body.style.overflow = "hidden";
+    const focusable = () =>
+      Array.from(
+        sidebar.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex="0"]',
+        ),
+      ).filter((element) => element.getClientRects().length > 0);
+    focusable()[0]?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+      }
+      if (event.key !== "Tab") return;
+      const targets = focusable();
+      const first = targets[0];
+      const last = targets[targets.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    const onResize = () => {
+      if (!media.matches) setOpen(false);
+    };
+    sidebar.addEventListener("keydown", onKeyDown);
+    media.addEventListener("change", onResize);
+    return () => {
+      sidebar.removeEventListener("keydown", onKeyDown);
+      media.removeEventListener("change", onResize);
+      background.forEach((element, index) => {
+        element.inert = previousInert[index];
+      });
+      document.body.style.overflow = previousOverflow;
+      if (media.matches) toggle?.focus();
+    };
+  }, [open]);
   return (
     <>
-      <div className="mobile-bar">
+      <div className="mobile-bar" ref={mobileBarRef}>
         <Brand compact />
         <button
           className="icon-button"
+          ref={toggleRef}
+          type="button"
+          aria-expanded={open}
+          aria-controls="workspace-navigation"
           aria-label={open ? "Close navigation" : "Open navigation"}
           onClick={() => setOpen(!open)}
         >
@@ -86,11 +150,31 @@ export function Navigation({ role, name, unread }: { role: Role; name: string; u
       {open && (
         <button
           className="sidebar-shade"
+          type="button"
+          tabIndex={-1}
           aria-label="Close navigation"
           onClick={() => setOpen(false)}
         />
       )}
-      <aside className={`sidebar ${open ? "open" : ""}`}>
+      <aside
+        id="workspace-navigation"
+        ref={sidebarRef}
+        className={`sidebar ${open ? "open" : ""}`}
+        role={open ? "dialog" : undefined}
+        aria-modal={open ? true : undefined}
+        aria-label={open ? roleLabels[role] : undefined}
+      >
+        <div className="mobile-drawer-heading">
+          <strong>Navigation</strong>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Close navigation"
+            onClick={() => setOpen(false)}
+          >
+            <X size={20} />
+          </button>
+        </div>
         <Link href="/" className="sidebar-brand">
           <Brand compact />
         </Link>
@@ -102,6 +186,7 @@ export function Navigation({ role, name, unread }: { role: Role; name: string; u
               <Link
                 href={`/dashboard${path}`}
                 key={path}
+                aria-current={pathname === `/dashboard${path}` ? "page" : undefined}
                 onClick={() => setOpen(false)}
                 className={`nav-link ${pathname === `/dashboard${path}` ? "active" : ""}`}
               >

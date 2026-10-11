@@ -1,6 +1,6 @@
 "use client";
-import { useState, type ReactNode } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Empty } from "./ui";
 export function SearchList({
   items,
@@ -15,23 +15,41 @@ export function SearchList({
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
+  const searchRef = useRef<HTMLInputElement>(null);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = normalizedQuery.length > 0 || filter !== "All";
   const visible = items.filter(
     (item) =>
-      item.search.toLowerCase().includes(query.toLowerCase()) &&
+      item.search.toLowerCase().includes(normalizedQuery) &&
       (filter === "All" || item.filter === filter),
   );
   return (
     <>
       <div className="list-toolbar">
-        <label className="search-field">
+        <div className="search-field">
           <Search size={18} />
           <input
+            ref={searchRef}
+            type="search"
             aria-label="Search records"
             placeholder={placeholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-        </label>
+          {query && (
+            <button
+              type="button"
+              className="search-clear"
+              aria-label="Clear search"
+              onClick={() => {
+                setQuery("");
+                searchRef.current?.focus();
+              }}
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
         {filters.length > 0 && (
           <label className="filter-field">
             <SlidersHorizontal size={16} />
@@ -46,8 +64,21 @@ export function SearchList({
             </select>
           </label>
         )}
-        <span className="result-count">
-          {visible.length} {visible.length === 1 ? "record" : "records"}
+        {filtered && (
+          <button
+            type="button"
+            className="reset-filters"
+            onClick={() => {
+              setQuery("");
+              setFilter("All");
+              searchRef.current?.focus();
+            }}
+          >
+            Reset filters
+          </button>
+        )}
+        <span className="result-count" role="status" aria-live="polite" aria-atomic="true">
+          {visible.length} of {items.length} {items.length === 1 ? "record" : "records"}
         </span>
       </div>
       {visible.length ? (
@@ -57,7 +88,14 @@ export function SearchList({
           ))}
         </div>
       ) : (
-        <Empty title="No matching records" description="Try another search or filter." />
+        <Empty
+          title={filtered ? "No matching records" : "No records yet"}
+          description={
+            filtered
+              ? "Try another search or reset your filters."
+              : "Records will appear here when available."
+          }
+        />
       )}
     </>
   );
