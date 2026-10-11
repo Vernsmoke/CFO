@@ -1,0 +1,25 @@
+node_modules/
+.next/
+.next-browser/
+.env*
+!.env.example
+data/
+private-uploads/
+test-results/
+*.tsbuildinfo
+next-env.d.ts
+.preview/
+
+# Local contributor guidance, skills, and verification tools are not distributed.
+AGENTS.md
+.agents/
+.codex/
+skills-lock.json
+tests/
+playwright.config.ts
+eslint.config.mjs
+.prettierignore
+.prettierrc.json
+scripts/prepare-browser-tests.mjs
+scripts/download-assets.mjs
+docs/
