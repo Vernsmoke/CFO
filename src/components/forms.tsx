@@ -54,7 +54,10 @@ export function WorkflowForm({
   const safety = useFormSafety(formRef, draftKey);
   const saved = safety.saved;
   useEffect(() => {
-    if (state.ok) saved();
+    if (state.ok) {
+      formRef.current?.reset();
+      saved();
+    }
     if (confirmed.current) confirmed.current.value = "false";
   }, [state, saved]);
   return (
@@ -82,8 +85,10 @@ export function WorkflowForm({
         }}
         onChangeCapture={safety.changed}
         onSubmit={(event) => {
+          // Dispatch explicitly so a rejected action does not reset native fields or files.
+          event.preventDefault();
+          if (pending) return;
           setErrors({});
-          if (confirmed.current?.value === "true") return;
           const data = new FormData(event.currentTarget);
           let next: typeof confirmation = null;
           if (intent === "withdraw")
@@ -123,10 +128,9 @@ export function WorkflowForm({
               reason: false,
             };
           if (next) {
-            event.preventDefault();
             confirmationData.current = data;
             setConfirmation(next);
-          }
+          } else startTransition(() => action(data));
         }}
       >
         <input type="hidden" name="intent" value={intent} />
@@ -378,7 +382,16 @@ export function LoginForm({ demoPassword }: { demoPassword?: string }) {
     message: "",
   } as ActionResult);
   return (
-    <form action={action} className="login-form">
+    <form
+      action={action}
+      className="login-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (pending) return;
+        const data = new FormData(event.currentTarget);
+        startTransition(() => action(data));
+      }}
+    >
       <Field
         label="University ID Number"
         name="universityId"

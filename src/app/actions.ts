@@ -316,7 +316,9 @@ export async function workflowAction(
         }
         return success(
           intent === "createActivity"
-            ? "Activity saved. Publish it when ready for registration."
+            ? activity.status === "Published"
+              ? "Activity saved and published. Eligible students can view it in Formation activities."
+              : "Activity saved as a draft. Publish it when ready for registration."
             : "Activity saved. Participants received an in-system update.",
         );
       }

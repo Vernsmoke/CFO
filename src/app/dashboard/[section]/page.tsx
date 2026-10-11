@@ -238,8 +238,20 @@ export default async function SectionPage({
                       </>
                     ) : registration ? (
                       <div className="between">
-                        <Status>{registration.status}</Status>
-                        <Link href="/dashboard/submissions" className="text-link">
+                        <div>
+                          <Status>{registration.status}</Status>
+                          <p className="small muted">Reference: {registration.id}</p>
+                          {registration.status === "Submitted" && (
+                            <p className="small muted">
+                              Registration submitted. Check your requirements and staff feedback in
+                              My submissions.
+                            </p>
+                          )}
+                        </div>
+                        <Link
+                          href={`/dashboard/submissions?q=${encodeURIComponent(registration.id)}`}
+                          className="text-link"
+                        >
                           View my submission
                           <ArrowUpRight size={16} />
                         </Link>
