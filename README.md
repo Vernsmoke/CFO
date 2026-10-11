@@ -74,4 +74,6 @@ The repository includes application source, required assets, configuration, a de
 
 ## Asset sources
 
-[Cabinet Grotesk by Fontshare](https://www.fontshare.com/fonts/cabinet-grotesk) and [Lucide icons](https://lucide.dev/). Chapel, devotional-book/rosary, and retreat-garden images are AI-generated illustrative assets, stored locally as optimized WebP files. They depict fictional settings, not University of La Salette facilities or actual events. The interface uses walnut brown, parchment cream, and muted bronze, with a matching warm dark mode. Status colors retain their distinct meanings.
+[Inter by Rasmus Andersson](https://rsms.me/inter/) (bundled locally under the SIL Open Font License) and [Lucide icons](https://lucide.dev/). The design uses cream surfaces, deep coffee text, orange actions, and a matching warm dark mode. Inter is the open-source display substitute suggested by the supplied Zapier design reference. Status colors retain their distinct meanings.
+
+The public page uses an interactive formation workflow illustration. Chapel, devotional-book/rosary, and retreat-garden images support the sign-in and activity pages as locally stored, optimized WebP assets. These AI-generated illustrations depict fictional settings, not University of La Salette facilities or actual events.

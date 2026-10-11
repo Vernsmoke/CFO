@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, MapPin, Clock3, FileCheck2, Inbox } from "lucide-react";
 import type { Activity, Registration } from "@/lib/types";
-import { ActivityArtwork } from "./activity-artwork";
+import { registrationLabel } from "@/lib/policy";
 export function formatDate(date: string, short = false) {
   return new Intl.DateTimeFormat("en-PH", {
     timeZone: "Asia/Manila",
@@ -100,30 +100,27 @@ export function SectionHeading({
 export function ActivityTile({
   activity,
   registration,
-  index = 0,
+  participants,
 }: {
   activity: Activity;
   registration?: Registration;
-  index?: number;
+  participants: number;
 }) {
-  const date = new Date(`${activity.date}T12:00:00+08:00`);
+  const date = new Date(`${activity.date}T12:00:00Z`);
   return (
-    <Link href="/dashboard/activities" className={`activity-tile tile-${index % 3}`}>
-      <ActivityArtwork type={activity.type}>
-        <span className="activity-type">{activity.type}</span>
-        <span className="date-square">
-          <strong>{date.getDate()}</strong>
-          <small>{date.toLocaleString("en", { month: "short" })}</small>
-        </span>
-      </ActivityArtwork>
+    <Link href="/dashboard/activities" className="activity-tile">
+      <span className="activity-date">
+        <small>{date.toLocaleString("en", { month: "short", timeZone: "UTC" })}</small>
+        <strong>{date.getUTCDate()}</strong>
+      </span>
       <div className="activity-tile-content">
         <div className="tile-status">
+          <span className="activity-kind">{activity.type}</span>
           {registration ? (
             <Status>{registration.status}</Status>
           ) : (
-            <span className="small muted">Registration open</span>
+            <span className="small muted">{registrationLabel(activity, participants)}</span>
           )}
-          <ArrowUpRight size={17} />
         </div>
         <h3>{activity.title}</h3>
         <p>
@@ -137,6 +134,7 @@ export function ActivityTile({
           {activity.venue}
         </p>
       </div>
+      <ArrowUpRight className="activity-open" size={20} />
     </Link>
   );
 }

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/store";
-import { canSeeActivity } from "@/lib/policy";
+import { canSeeActivity, manilaDay } from "@/lib/policy";
 import {
   ActivityTile,
   Empty,
@@ -30,9 +30,15 @@ export default async function DashboardPage() {
   const registrations = db.registrations.filter(
     (r) => user.role === "staff" || r.userId === user.id,
   );
-  const activities = db.activities.filter(
-    (a) => canSeeActivity(user, profile?.department ?? "", a, profile) && a.status === "Published",
-  );
+  const today = manilaDay();
+  const activities = db.activities
+    .filter(
+      (a) =>
+        canSeeActivity(user, profile?.department ?? "", a, profile) &&
+        a.status === "Published" &&
+        a.date >= today,
+    )
+    .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
   const notifications = db.notifications.filter((n) => n.userId === user.id && !n.read);
   const announcements = db.announcements.filter(
     (a) => a.department === "All departments" || a.department === profile?.department,
@@ -158,7 +164,13 @@ export default async function DashboardPage() {
   return (
     <>
       <PageHeading
+        eyebrow="Your workspace"
         title={`Welcome back, ${user.name.split(" ")[0]}.`}
+        description={
+          student
+            ? "Your activities, requirements, and updates at a glance."
+            : "A clear view of what’s happening in your office."
+        }
         action={
           student ? (
             <Link href="/dashboard/profile" className="profile-status">
@@ -216,10 +228,15 @@ export default async function DashboardPage() {
             <SectionHeading title="Upcoming activities" href="/dashboard/activities" />
             {activities.length ? (
               <div className="activity-grid">
-                {activities.slice(0, 3).map((a, i) => (
+                {activities.slice(0, 3).map((a) => (
                   <ActivityTile
                     key={a.id}
                     activity={a}
+                    participants={
+                      db.registrations.filter(
+                        (r) => r.activityId === a.id && r.status !== "Withdrawn",
+                      ).length
+                    }
                     registration={
                       student
                         ? registrations.find(
@@ -227,7 +244,6 @@ export default async function DashboardPage() {
                           )
                         : undefined
                     }
-                    index={i}
                   />
                 ))}
               </div>

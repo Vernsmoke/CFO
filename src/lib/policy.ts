@@ -62,6 +62,12 @@ export function configuredFacilities(db: Pick<Database, "settings">) {
 export function manilaDay(value = new Date().toISOString()) {
   return new Date(Date.parse(value) + 8 * 3600000).toISOString().slice(0, 10);
 }
+export function registrationLabel(activity: Activity, participants: number, today = manilaDay()) {
+  if (activity.status !== "Published") return "Registration unavailable";
+  if (activity.deadline < today) return "Registration closed";
+  if (participants >= activity.capacity) return "Activity full";
+  return "Registration open";
+}
 export type ReportFilters = {
   activity?: string;
   department?: string;
