@@ -3873,6 +3873,470 @@ td small {
     gap: 8px;
   }
 }
+/* Compact navigation and operational controls. */
+.sidebar-collapse,
+.theme-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+}
+.sidebar-collapse {
+  margin-bottom: 16px;
+}
+.sidebar-collapse:hover,
+.theme-control:hover {
+  background: var(--sage);
+}
+.sidebar-brand {
+  margin-bottom: 16px;
+}
+.sidebar-bottom {
+  gap: 14px;
+}
+.navigation-tooltip {
+  position: fixed;
+  left: 88px;
+  transform: translateY(-50%);
+  z-index: 100;
+  max-width: 260px;
+  padding: 10px 14px;
+  border-radius: 7px;
+  color: white;
+  background: #253b32;
+  font-size: 1rem;
+  pointer-events: none;
+}
+.brand-symbol img {
+  object-fit: contain;
+}
+.confirm-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--white);
+  color: var(--ink);
+}
+.confirm-dialog::backdrop {
+  background: #12251899;
+}
+.dialog-heading,
+.dialog-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+}
+.dialog-heading h2 {
+  font-size: 1.5rem;
+}
+.confirm-dialog p {
+  margin: 20px 0;
+}
+.dialog-actions {
+  margin-top: 24px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.field-error {
+  color: #9a382e;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.field [aria-invalid="true"] {
+  border-color: #9a382e;
+}
+.draft-notice {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.record-history,
+.record-description,
+.list-filters {
+  margin: 18px 0;
+  font-size: 1rem;
+}
+.record-history summary,
+.record-description summary,
+.list-filters summary {
+  cursor: pointer;
+  color: var(--green);
+  font-weight: 600;
+  min-height: 44px;
+  padding-block: 10px;
+}
+.record-history ol {
+  list-style: none;
+  padding: 0 0 0 18px;
+  margin: 14px 0;
+  border-left: 2px solid var(--line);
+}
+.record-history li {
+  margin: 16px 0;
+  overflow-wrap: anywhere;
+}
+.record-history li small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.record-history p,
+.record-description p {
+  color: var(--muted);
+  font-size: 1rem;
+}
+.document-record {
+  border: 1px solid var(--line);
+  padding: 18px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+.document-record a {
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.document-record small {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.document-record .notice-inline {
+  margin-bottom: 0;
+}
+.document-record.superseded {
+  background: var(--paper);
+}
+.refresh-records,
+.pagination,
+.date-presets,
+.report-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.refresh-records span {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.refresh-records span:empty {
+  display: none;
+}
+.pagination {
+  justify-content: center;
+  margin: 24px 0;
+}
+.list-filters {
+  padding: 12px 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+}
+.list-filters .form-grid {
+  margin-block: 12px;
+}
+.date-presets {
+  margin-bottom: 12px;
+}
+.availability-content,
+.report-filter-panel {
+  padding: 24px;
+}
+.availability-content > p {
+  margin: 16px 0;
+}
+.availability-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+.settings-stack {
+  display: grid;
+  gap: 24px;
+  max-width: 900px;
+}
+.logo-preview {
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.attendance-picker {
+  max-width: 650px;
+  margin: 24px 0;
+}
+.attendance-outcome,
+.deadline-indicator {
+  font-size: 1rem;
+  color: var(--green);
+  font-weight: 600;
+  margin-top: 14px;
+}
+.report-filter-panel {
+  margin-bottom: 24px;
+}
+.report-filter-actions {
+  grid-column: 1 / -1;
+}
+.staff-task-queue {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 22px;
+  margin-bottom: 28px;
+}
+.staff-task-queue h2 {
+  font-size: 1.375rem;
+}
+.staff-task-queue a {
+  display: flex;
+  gap: 14px;
+  padding: 10px;
+  color: var(--green);
+}
+.workspace-loading {
+  display: grid;
+  gap: 24px;
+  color: var(--muted);
+}
+.loading-line,
+.loading-block {
+  border-radius: 8px;
+  background: var(--sage);
+}
+.loading-line {
+  width: 45%;
+  height: 32px;
+}
+.loading-block {
+  min-height: 160px;
+}
+@media (min-width: 801px) {
+  .sidebar.compact {
+    width: 76px;
+    padding-inline: 10px;
+  }
+  .app-shell[data-compact="true"] .workspace {
+    margin-left: 76px;
+    width: calc(100% - 76px);
+  }
+  .sidebar.compact .brand > span:last-child,
+  .sidebar.compact .workspace-label,
+  .sidebar.compact .sidebar-collapse span,
+  .sidebar.compact .nav-link > span,
+  .sidebar.compact .nav-link > b,
+  .sidebar.compact .theme-control span,
+  .sidebar.compact .sidebar-user > div,
+  .sidebar.compact .sidebar-user > .avatar {
+    display: none;
+  }
+  .sidebar.compact .sidebar-brand {
+    margin-inline: 6px;
+  }
+  .sidebar.compact .nav-link,
+  .sidebar.compact .sidebar-collapse,
+  .sidebar.compact .theme-control,
+  .sidebar.compact .sidebar-user {
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0;
+  }
+}
+@media (max-width: 800px) {
+  .sidebar-collapse,
+  .navigation-tooltip {
+    display: none;
+  }
+  .app-shell[data-compact="true"] .workspace {
+    margin-left: 0;
+    width: 100%;
+  }
+  .refresh-records .button {
+    min-height: 44px;
+  }
+}
+/* Dark mode is scoped to the workspace; public pages retain their own art direction. */
+html[data-theme="dark"] .app-shell {
+  --ink: #eaf1e8;
+  --muted: #b8c7ba;
+  --paper: #17201c;
+  --white: #222e26;
+  --line: #405143;
+  --sage: #2d3c30;
+  --green: #bad5ad;
+  color: var(--ink);
+  background: var(--paper);
+}
+html[data-theme="dark"]
+  .app-shell
+  :is(
+    .sidebar,
+    .mobile-bar,
+    .workspace-header,
+    .surface,
+    .metric,
+    .activity-tile,
+    .create-panel,
+    .field input,
+    .field select,
+    .field textarea,
+    .search-field,
+    .filter-field,
+    .button.secondary,
+    .confirm-dialog,
+    .upload-field,
+    .report-filter-panel,
+    .list-filters,
+    .requirement-box,
+    .profile-status,
+    .record-history pre
+  ) {
+  background: var(--white);
+  color: var(--ink);
+  border-color: var(--line);
+}
+html[data-theme="dark"]
+  .app-shell
+  :is(
+    .sidebar-user strong,
+    .sidebar-user small,
+    .workspace-header strong,
+    .search-field input,
+    .filter-field select,
+    .record-top p,
+    .activity-meta,
+    .field > span,
+    .field > label,
+    .workspace-label,
+    .registration-line small,
+    .activity-tile p,
+    .activity-detail-body > p,
+    .requirement-box strong,
+    .requirement-box p,
+    .requirement-box small,
+    .announcement-preview p,
+    .announcement-preview a,
+    .announcement-full > p,
+    .record-facts,
+    .metric > div,
+    .metric > div > span,
+    .section-heading > a,
+    .result-count,
+    .document-record small,
+    .attendance-times span,
+    .audit-row p,
+    .audit-row pre,
+    .audit-row time,
+    .report-metrics span,
+    td,
+    td small,
+    th
+  ) {
+  color: var(--muted);
+}
+html[data-theme="dark"] .app-shell .button:not(.secondary):not(.light-button),
+html[data-theme="dark"] .app-shell .nav-link.active {
+  background: #315a43;
+  border-color: #315a43;
+  color: white;
+}
+html[data-theme="dark"]
+  .app-shell
+  :is(
+    .boundary-note,
+    .notice-inline,
+    .conflict-note,
+    .attention-note,
+    .notification-row.unread,
+    th
+  ) {
+  background: #29372b;
+  border-color: #536948;
+  color: #e4d6af;
+}
+html[data-theme="dark"]
+  .app-shell
+  :is(
+    .attention-note strong,
+    .attention-note p,
+    .attention-note > a,
+    .conflict-note p,
+    .conflict-note strong
+  ) {
+  color: #e4d6af;
+}
+html[data-theme="dark"] .app-shell .form-message.success {
+  background: #2b442e;
+  color: #d4eac7;
+}
+html[data-theme="dark"] .app-shell .form-message.error {
+  background: #482e29;
+  color: #ffd4c9;
+}
+html[data-theme="dark"] .app-shell .nav-link:not(.active):hover {
+  background: var(--sage);
+  color: var(--ink);
+}
+.date-input {
+  position: relative;
+  width: 100%;
+}
+.date-input input {
+  padding-right: 50px;
+}
+.date-input input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+.date-picker-button {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  color: var(--green);
+}
+@media (forced-colors: active) {
+  .nav-link.active,
+  .button,
+  .status {
+    border: 1px solid ButtonText;
+  }
+}
+html[data-theme="dark"] .app-shell .field-error {
+  color: #ffbcac;
+}
+html[data-theme="dark"] .app-shell .brand-symbol {
+  background: #2d3c30;
+}
+html[data-theme="dark"] .app-shell :is(.create-panel > summary, .search-clear, .reset-filters) {
+  color: var(--green);
+}
+html[data-theme="dark"] .app-shell :is(.search-clear, .reset-filters) {
+  background: transparent;
+}
+html[data-theme="dark"] .app-shell :is(.search-clear, .reset-filters):hover {
+  background: var(--sage);
+}
+html[data-theme="dark"] .app-shell :is(.activity-type, .date-square, .detail-art > span) {
+  color: #3b5136;
+}
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
