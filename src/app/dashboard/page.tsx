@@ -196,9 +196,9 @@ export default async function DashboardPage() {
           ))}
         </div>
       </section>
-      <WorkspaceTasks user={user} db={db} />
+      {!(student || staff) && <WorkspaceTasks user={user} db={db} />}
       {student || staff ? (
-        <div className="dashboard-columns">
+        <div className="dashboard-columns formation-dashboard">
           <div>
             <SectionHeading title="Upcoming activities" href="/dashboard/activities" />
             {activities.length ? (
@@ -249,6 +249,7 @@ export default async function DashboardPage() {
             </div>
           </div>
           <aside className="dashboard-aside">
+            <WorkspaceTasks user={user} db={db} />
             <SectionHeading title="Announcements" href="/dashboard/announcements" label="All" />
             <div className="surface announcement-preview">
               {!announcements.length && (

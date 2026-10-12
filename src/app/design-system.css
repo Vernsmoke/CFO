@@ -1,4 +1,4 @@
-/* Ivory, walnut, and taupe: the shared CFO design system. */
+/* University green and ivory: the shared CFO design system. */
 @font-face {
   font-family: Inter;
   src: url("/fonts/inter-variable.woff2") format("woff2");
@@ -7,20 +7,20 @@
   font-display: swap;
 }
 :root {
-  --ink: #201515;
-  --deep: #201515;
-  --muted: #605d52;
-  --paper: #fffefb;
-  --white: #fffefb;
-  --tint: #f8f4f0;
-  --line: #ddd8cf;
-  --accent: #705747;
-  --accent-hover: #594334;
-  --accent-ink: #654c3c;
-  --accent-soft: #eee7df;
-  --accent-border: #d5c6b8;
-  --on-accent: #fffefb;
-  --on-dark: #fffefb;
+  --ink: #123b2d;
+  --deep: #123b2d;
+  --muted: #59675e;
+  --paper: #fffef9;
+  --white: #fffef9;
+  --tint: #eef2e9;
+  --line: #d8dfd3;
+  --accent: #1c573f;
+  --accent-hover: #123e2d;
+  --accent-ink: #23583f;
+  --accent-soft: #e7eee1;
+  --accent-border: #becfba;
+  --on-accent: #fffef9;
+  --on-dark: #fffef9;
   --radius: 12px;
 }
 body {
@@ -837,7 +837,7 @@ html[data-theme="dark"] .app-shell .brand-symbol.brand-logo {
   background: var(--white);
   color: var(--ink);
   border-color: var(--line);
-  box-shadow: inset 3px 0 var(--accent);
+  box-shadow: none;
   font-weight: 600;
 }
 .nav-link.active svg {
@@ -1514,7 +1514,7 @@ td small {
 }
 .notification-row.unread {
   background: var(--accent-soft);
-  border-left: 3px solid var(--accent);
+  border-left: 0;
 }
 .notification-row p,
 .notification-row small {
@@ -1571,7 +1571,7 @@ html[data-theme="dark"] .app-shell .nav-link.active {
   color: var(--ink);
   background: var(--white);
   border-color: var(--line);
-  box-shadow: inset 3px 0 var(--accent);
+  box-shadow: none;
 }
 html[data-theme="dark"] .app-shell .brand-symbol {
   background: var(--accent);
@@ -2070,7 +2070,7 @@ html[data-theme="dark"] .app-shell .detail-art > .artwork-label {
   flex-shrink: 0;
 }
 .task-row:first-child {
-  border-left: 4px solid var(--accent);
+  border-left: 0;
   padding-left: 16px;
 }
 .dashboard-summary {
@@ -2142,7 +2142,7 @@ html[data-theme="dark"] .app-shell .detail-art > .artwork-label {
 .status-guide {
   padding: 14px 16px;
   margin: 16px 0;
-  border-left: 3px solid var(--accent);
+  border-left: 0;
   background: var(--accent-soft);
   font-size: 0.9375rem;
   color: var(--ink);

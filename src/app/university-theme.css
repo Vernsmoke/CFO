@@ -1,0 +1,448 @@
+/* Selected visual direction: university green, warm ivory, restrained gold. */
+:root {
+  --canvas: #f5f5ec;
+}
+::selection {
+  background: #cdddc6;
+  color: #123b2d;
+}
+.button {
+  border-radius: 8px;
+}
+.button.secondary {
+  border-color: var(--accent-border);
+}
+.site-nav {
+  border-top: 0;
+  background: var(--white);
+}
+.site-hero {
+  padding-block: 80px 88px;
+  gap: 8%;
+  grid-template-columns: 1.1fr 1fr;
+}
+.site-hero h1 {
+  font-size: clamp(2.7rem, 4.7vw, 4.8rem);
+  line-height: 1.08;
+}
+.site-hero-copy .site-eyebrow {
+  color: var(--accent-ink);
+}
+.journey-demo {
+  border: 1px solid var(--accent-border);
+  background: var(--tint);
+  padding: 28px;
+  border-radius: 8px 8px 20px 20px;
+}
+.journey-flow .flow-card {
+  border-color: var(--accent-border);
+  box-shadow: none;
+}
+.journey-flow li:nth-child(2) .flow-card {
+  margin-left: 0;
+}
+.site-programs {
+  background: var(--deep);
+  color: var(--on-dark);
+  border-block: 0;
+}
+.site-programs .site-container > span {
+  color: #d0ddc9;
+}
+.site-programs strong {
+  color: var(--on-dark);
+}
+.site-students {
+  padding-block: 96px;
+}
+.formation-story {
+  border-color: var(--accent-border);
+  background: var(--tint);
+}
+.site-office {
+  background: #e7eee1;
+  color: var(--ink);
+}
+.site-office p {
+  color: var(--muted);
+}
+.office-checklist > div {
+  border-color: var(--accent-border);
+}
+.site-closing {
+  padding-block: 80px;
+}
+.site-closing > svg {
+  color: var(--accent);
+}
+.site-footer {
+  background: var(--deep);
+  border-top: 0;
+}
+.login-page {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+}
+.login-story {
+  background: var(--deep);
+  color: var(--on-dark);
+  padding: 48px 10%;
+  border-right: 0;
+  border-top: 0;
+}
+.login-story .brand,
+.login-story .brand small,
+.login-story .site-eyebrow {
+  color: var(--on-dark);
+}
+.login-story h1 span {
+  color: #d8deae;
+}
+.login-story p,
+.login-formation-note small {
+  color: #ccd9cb;
+}
+.login-path svg,
+.login-formation-note > svg {
+  color: #d8c487;
+}
+.login-formation-note {
+  border-top: 1px solid #45604d;
+  padding-top: 28px !important;
+}
+.login-panel {
+  background: var(--canvas);
+  padding-inline: 8%;
+}
+.login-content {
+  padding: 36px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  max-width: 480px;
+  margin-block: auto;
+}
+.login-content h2 {
+  font-size: 2.5rem;
+}
+.app-shell {
+  background: var(--canvas);
+}
+.app-shell .workspace {
+  background: var(--canvas);
+}
+.app-shell .sidebar {
+  --ink: #fffef9;
+  --muted: #c4d4c8;
+  --line: #365747;
+  --white: #204d3a;
+  --tint: #1b4935;
+  --accent: #d4bb76;
+  --accent-ink: #e0cc91;
+  --accent-soft: #315840;
+  background: #123b2d;
+  color: var(--ink);
+  border-right: 0;
+}
+.app-shell .sidebar .brand,
+.app-shell .sidebar .brand small,
+.app-shell .sidebar-user strong {
+  color: #fffef9;
+}
+.app-shell .sidebar .workspace-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #d5c48e;
+}
+.app-shell .sidebar .nav-group-label {
+  color: #b9cdbc;
+  font-size: 0.75rem;
+}
+.app-shell .sidebar .nav-link:not(.active),
+.app-shell .sidebar .theme-control,
+.app-shell .sidebar .sidebar-collapse {
+  color: #d8e3d9;
+}
+.app-shell .sidebar .nav-link.active {
+  background: #fffef9;
+  color: #123b2d;
+  border-color: #fffef9;
+  box-shadow: none;
+}
+.app-shell .sidebar .nav-link.active svg {
+  color: #23583f;
+}
+.app-shell .sidebar .nav-link:hover:not(.active) {
+  background: #28503d;
+  color: #fffef9;
+}
+.app-shell .sidebar .nav-link > b {
+  background: #d8c487;
+  color: #123b2d;
+}
+.app-shell .sidebar .icon-button {
+  color: #fffef9;
+}
+.app-shell .sidebar .avatar {
+  color: #fffef9;
+  border-color: #55715d;
+  background: #28503d;
+}
+.app-shell .workspace-header {
+  background: var(--white);
+  border-bottom: 1px solid var(--line);
+}
+.app-shell .workspace-content {
+  padding: 36px 40px 48px;
+}
+.app-shell .page-heading {
+  margin-bottom: 30px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.app-shell .page-heading h1 {
+  font-size: clamp(1.8rem, 2.6vw, 2.4rem);
+  font-weight: 550;
+}
+.app-shell .page-heading .tiny-overline {
+  color: var(--accent-ink);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+}
+.app-shell .profile-status {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 12px 16px;
+}
+.overview-summary .metrics-grid {
+  gap: 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+.overview-summary .metric {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+  padding: 22px;
+}
+.overview-summary .metric:last-child {
+  border-right: 1px solid var(--line);
+}
+.overview-summary .metric > strong {
+  font-size: 2.3rem;
+  font-weight: 550;
+  color: var(--accent-ink);
+}
+.overview-summary .metric > div > svg {
+  width: 20px;
+  height: 20px;
+}
+.overview-summary > h2 {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+.formation-dashboard {
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.formation-dashboard > div > .section-heading:first-child {
+  margin-top: 0;
+}
+.formation-dashboard .dashboard-aside {
+  padding-top: 0;
+}
+.formation-dashboard .task-section > h2 {
+  margin-bottom: 16px;
+  font-size: 1.125rem;
+}
+.formation-dashboard .task-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  padding: 22px;
+}
+.formation-dashboard .task-row:first-child {
+  border-left: 0;
+  border-top: 0;
+  padding: 20px 22px 22px;
+}
+.formation-dashboard .task-row .button {
+  align-self: flex-start;
+  min-height: 44px;
+  font-size: 0.875rem;
+  padding: 10px 16px;
+}
+.formation-dashboard .task-row p {
+  font-size: 0.875rem;
+}
+.app-shell .activity-grid {
+  border: 0;
+  background: transparent;
+  gap: 12px;
+  overflow: visible;
+}
+.app-shell .activity-tile {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  gap: 20px;
+}
+.app-shell .activity-tile:last-child {
+  border-bottom: 1px solid var(--line);
+}
+.app-shell .activity-date {
+  background: var(--accent-soft);
+  border: 0;
+  min-height: 72px;
+}
+.app-shell .activity-date strong {
+  color: var(--accent-ink);
+}
+.app-shell .announcement-preview {
+  background: var(--white);
+}
+.app-shell .list-toolbar {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.app-shell .record-summary {
+  padding: 24px;
+}
+.app-shell .record-card,
+.app-shell .form-surface {
+  border-radius: 12px;
+}
+.app-shell .field input,
+.app-shell .field select,
+.app-shell .field textarea {
+  border-color: var(--accent-border);
+  border-radius: 8px;
+}
+.app-shell .create-panel > summary {
+  padding: 20px 24px;
+}
+.app-shell .workspace-footer {
+  color: var(--muted);
+}
+html[data-theme="dark"] .app-shell {
+  --ink: #eff5eb;
+  --deep: #0e241b;
+  --muted: #b7c7b8;
+  --paper: #10271e;
+  --canvas: #10271e;
+  --white: #19372a;
+  --tint: #244333;
+  --line: #3c5946;
+  --accent: #b8d7ae;
+  --accent-hover: #cbe5c3;
+  --on-accent: #10271e;
+  --accent-ink: #c3dfb9;
+  --accent-soft: #294833;
+  --accent-border: #527458;
+}
+html[data-theme="dark"] .app-shell .sidebar {
+  background: #0b261c;
+}
+html[data-theme="dark"] .app-shell .overview-summary .metrics-grid {
+  background: transparent;
+}
+html[data-theme="dark"] .app-shell .overview-summary .metric {
+  background: var(--white);
+}
+@media (max-width: 1200px) {
+  .app-shell .workspace-content {
+    padding-inline: 28px;
+  }
+  .formation-dashboard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .formation-dashboard .dashboard-aside {
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .formation-dashboard .task-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .formation-dashboard .task-row + .task-row {
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+  .formation-dashboard .task-row .button {
+    margin-top: auto;
+  }
+}
+@media (max-width: 800px) {
+  .site-hero {
+    grid-template-columns: 1fr;
+    padding-block: 44px;
+    gap: 32px;
+  }
+  .site-hero h1 {
+    font-size: clamp(2.5rem, 7vw, 3.4rem);
+  }
+  .site-students {
+    padding-block: 56px;
+  }
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+  .login-story {
+    padding: 28px 24px;
+    gap: 28px;
+  }
+  .login-panel {
+    padding: 24px;
+  }
+  .login-content {
+    padding: 28px;
+    margin-block: 24px;
+  }
+  .app-shell .workspace-content {
+    padding: 24px 16px 36px;
+  }
+  .app-shell .page-heading {
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .overview-summary .metrics-grid {
+    gap: 10px;
+  }
+  .overview-summary .metric,
+  .overview-summary .metric:nth-child(2) {
+    padding: 16px;
+    border: 1px solid var(--line);
+  }
+  .overview-summary .metric > strong {
+    font-size: 1.8rem;
+  }
+  .formation-dashboard .task-list {
+    display: block;
+  }
+  .formation-dashboard .task-row + .task-row {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .formation-dashboard .task-row .button {
+    width: 100%;
+  }
+  .app-shell .activity-tile {
+    padding: 18px;
+    gap: 14px;
+  }
+  .app-shell .record-summary {
+    padding: 18px;
+  }
+  .app-shell .list-toolbar {
+    padding: 12px;
+  }
+}

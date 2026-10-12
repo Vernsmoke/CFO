@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./design-system.css";
 import "./workspace-polish.css";
+import "./university-theme.css";
 export const metadata: Metadata = {
   title: { default: "Christian Formation · La Salette", template: "%s · Christian Formation" },
   description:
