@@ -3,6 +3,7 @@ import { Bell } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/store";
 import { Navigation } from "@/components/navigation";
+import { WorkspaceHeader } from "@/components/workspace-header";
 export const dynamic = "force-dynamic";
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -16,9 +17,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <Navigation role={user.role} name={user.name} unread={unread} branding={db.settings} />
       <div className="workspace">
         <header className="workspace-header">
-          <div>
-            <strong>{db.settings?.officeName ?? "Christian Formation Office"}</strong>
-          </div>
+          <WorkspaceHeader role={user.role} />
           <div className="header-right">
             <Link
               className="notification-button"

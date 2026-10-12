@@ -37,7 +37,7 @@ export const roleLabels: Record<Role, string> = {
   admin: "Administration",
   viewer: "Reporting workspace",
 };
-const entries: { title: string; path: string; icon: LucideIcon; roles: Role[] }[] = [
+export const entries: { title: string; path: string; icon: LucideIcon; roles: Role[] }[] = [
   {
     title: "Overview",
     path: "",

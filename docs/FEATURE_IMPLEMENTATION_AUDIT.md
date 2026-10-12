@@ -27,6 +27,8 @@ Local evidence: `.preview/feature-audit-observations.json` and `tests/browser/z-
 
 ## Additional confirmed defect
 
+**Resolved locally on 11 October 2026:** The false untouched-form warning described below was fixed after the audit. Empty file inputs now have a stable comparison value, and dirty state compares current fields with the original values rather than retaining a flag after edits are reverted. Original values survive React effect re-runs so restored drafts still receive a warning. Four targeted Edge checks verified untouched submission navigation/sign-out, selected-file protection and clearing, text edits and reversion, and restored drafts. This update does not resolve the other gaps in this audit.
+
 **Unsaved-change warnings can appear without edits.** A fresh student login followed by opening My submissions and signing out produced one Discard unsaved changes dialog even though no fields were edited. Multiple submission forms can cause repeated dialogs. Root cause was not established during this audit; fix and verify it before treating the guard as complete.
 
 ## Where controls are located
@@ -50,3 +52,15 @@ Seeded activities may have only free-text requirements. Named document requireme
 Facility availability is currently a day-based schedule, not a full multi-day calendar. The date input enhancement opens the native browser date picker; it is not a custom Gym-style calendar. Automated reminders, offline attendance and production university integrations remain outside the implemented scope.
 
 No application fixes, commits, pushes or deployment were performed during the audit. Only local audit tests and documentation were added. User approval for the previously suggested improvement scope remains in the conversation; the next agent should use this audit to complete that scope when instructed, without claiming extensions were already promised.
+
+## Bug-fix follow-up — 11 October 2026
+
+The later repair pass resolved the incorrect Published-activity feedback and the disappearing registration confirmation described above. Registration cards now retain their reference and link directly to the matching submission. This does not add the optional missing-document checklist or separate account-status controls.
+
+Additional reproduced defects fixed:
+
+- Rejected server saves reset uncontrolled form fields and selected files. Workflow forms now dispatch without an automatic reset and reset only after a successful result. Failed sign-in also preserves entered credentials for retry. Unsaved-change protection remains active after errors.
+- The dashboard counted past Published activities as upcoming and showed unsorted records. It now excludes earlier Philippine calendar dates and sorts by date/time.
+- Activity tiles advertised registration as open after the deadline or at capacity. Their labels now account for publication, the Philippine deadline date, and active participant count. Calendar badges use a fixed timezone.
+
+Validation: 29 distinct Edge browser checks passed across the full and targeted runs, including all six role menus at desktop and 320px widths, rejected-save recovery, failed upload retention, published activity feedback, registration references, past dates and full/closed activity labels. An initially ambiguous login-test selector was corrected and rerun successfully. Ten policy tests, source lint, type checking, production compilation and diff whitespace checks passed. Four of the browser checks remain diagnostic audit scenarios rather than claims that optional feature gaps are complete. Existing university/business limitations remain unchanged. No commit, push or deployment was performed.

@@ -28,9 +28,9 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const db = await readDb();
   const profile = db.profiles.find((p) => p.userId === user.id);
-  const registrations = db.registrations.filter(
-    (r) => user.role === "staff" || r.userId === user.id,
-  );
+  const registrations = db.registrations
+    .filter((r) => user.role === "staff" || r.userId === user.id)
+    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
   const today = manilaDay();
   const activities = db.activities
     .filter(
@@ -41,9 +41,9 @@ export default async function DashboardPage() {
     )
     .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
   const notifications = db.notifications.filter((n) => n.userId === user.id && !n.read);
-  const announcements = db.announcements.filter(
-    (a) => a.department === "All departments" || a.department === profile?.department,
-  );
+  const announcements = db.announcements
+    .filter((a) => a.department === "All departments" || a.department === profile?.department)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const student = user.role === "student";
   const staff = user.role === "staff";
   const metrics = student
@@ -182,6 +182,20 @@ export default async function DashboardPage() {
           ) : undefined
         }
       />
+      <section className="dashboard-summary overview-summary" aria-label="Workspace summary">
+        <h2>At a glance</h2>
+        <div className={`metrics-grid ${metrics.length === 2 ? "two" : ""}`}>
+          {metrics.map(({ label, value, icon: Icon, href }) => (
+            <Link href={`/dashboard${href}`} key={label} className="metric">
+              <div>
+                <span>{label}</span>
+                <Icon size={20} strokeWidth={1.6} />
+              </div>
+              <strong>{String(value).padStart(2, "0")}</strong>
+            </Link>
+          ))}
+        </div>
+      </section>
       <WorkspaceTasks user={user} db={db} />
       {student || staff ? (
         <div className="dashboard-columns">
@@ -209,7 +223,10 @@ export default async function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <Empty />
+              <Empty
+                title="No upcoming activities"
+                description="New formation activities will appear here when they are published for you."
+              />
             )}
             <SectionHeading
               title={student ? "My submissions" : "Recent registrations"}
@@ -234,6 +251,12 @@ export default async function DashboardPage() {
           <aside className="dashboard-aside">
             <SectionHeading title="Announcements" href="/dashboard/announcements" label="All" />
             <div className="surface announcement-preview">
+              {!announcements.length && (
+                <Empty
+                  title="No announcements yet"
+                  description="Office updates will appear here."
+                />
+              )}
               {announcements.slice(0, 2).map((a) => (
                 <article key={a.id}>
                   <div>
@@ -249,20 +272,6 @@ export default async function DashboardPage() {
           </aside>
         </div>
       ) : null}
-      <section className="dashboard-summary">
-        <h2>At a glance</h2>
-        <div className={`metrics-grid ${metrics.length === 2 ? "two" : ""}`}>
-          {metrics.map(({ label, value, icon: Icon, href }) => (
-            <Link href={`/dashboard${href}`} key={label} className="metric">
-              <div>
-                <span>{label}</span>
-                <Icon size={20} strokeWidth={1.6} />
-              </div>
-              <strong>{String(value).padStart(2, "0")}</strong>
-            </Link>
-          ))}
-        </div>
-      </section>
     </>
   );
 }
