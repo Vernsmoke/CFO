@@ -7,7 +7,6 @@
         <nav class="public-links" aria-label="Primary navigation">
             <a href="#services">Services</a>
             <a href="#journey">Your journey</a>
-            <a class="button nav-cta" href="{{ route('login') }}">Sign in</a>
         </nav>
     </header>
 
@@ -17,16 +16,30 @@
                 <p class="eyebrow">University of La Salette, Inc. / CFO</p>
                 <h1 id="hero-title">Formation, <span class="highlight">where you are.</span></h1>
                 <p class="lead">Find activities, submit requirements, and follow every update in one secure workspace.</p>
-                <div class="actions"><a class="button" href="{{ route('login') }}">Sign in</a><a class="text-link" href="#services">Explore services</a></div>
+                <a class="hero-explore" href="#services">Explore what the office can help you do <span aria-hidden="true">↓</span></a>
             </div>
 
             <div class="hero-visual" data-reveal>
-                <figure class="hero-photo">
-                    <img src="{{ asset('images/chapel.webp') }}" alt="A peaceful university chapel">
-                    <figcaption><strong>Faith in action</strong><span>Campus formation, connected.</span></figcaption>
-                </figure>
+                <div class="hero-access-card">
+                    <figure class="hero-access-photo">
+                        <img src="{{ asset('images/chapel.webp') }}" alt="A peaceful university chapel">
+                        <figcaption><strong>Faith in action</strong><span>Campus formation, connected.</span></figcaption>
+                    </figure>
+                    <form method="post" action="{{ route('login') }}" class="hero-login" id="sign-in" aria-labelledby="sign-in-title">
+                        @csrf
+                        <div class="hero-login-heading">
+                            <div><p class="eyebrow">Secure access</p><h2 id="sign-in-title">Sign in to your workspace</h2></div>
+                            <span>University accounts</span>
+                        </div>
+                        @if($errors->any())<div class="hero-login-error" role="alert">{{ $errors->first() }}</div>@endif
+                        <div class="hero-login-fields">
+                            <label>University ID Number<input name="university_id" value="{{ old('university_id') }}" autocomplete="username" placeholder="e.g. 2024-0001" required></label>
+                            <label>Password<input type="password" name="password" autocomplete="current-password" placeholder="Enter your password" required></label>
+                            <button class="button" type="submit">Sign in <span aria-hidden="true">→</span></button>
+                        </div>
+                    </form>
+                </div>
                 <span class="visual-stamp stamp-one">Belong</span>
-                <span class="visual-stamp stamp-two">Serve</span>
             </div>
 
             <dl class="hero-summary" aria-label="Workspace summary" data-reveal>
@@ -56,7 +69,7 @@
                 <div class="service-body"><span>02 / Submit</span><h3>Keep every requirement together.</h3><p>Register and send required documents through your private workspace.</p></div>
             </article>
             <article class="service-card service-accent" data-reveal>
-                <div class="service-body"><span>03 / Follow</span><h3>Know what happens next.</h3><p>See review results, corrections, reminders, and office announcements without chasing updates.</p><a class="text-link" href="{{ route('login') }}">Sign in</a></div>
+                <div class="service-body"><span>03 / Follow</span><h3>Know what happens next.</h3><p>See review results, corrections, reminders, and office announcements without chasing updates.</p><a class="text-link" href="#sign-in">Sign in</a></div>
             </article>
         </div>
     </div>
@@ -80,7 +93,7 @@
     <div class="wrap closing-inner" data-reveal>
         <p>Your formation workspace is ready.</p>
         <h2>Take the next step.</h2>
-        <a class="button" href="{{ route('login') }}">Sign in</a>
+        <a class="button" href="#sign-in">Sign in</a>
     </div>
 </section>
 
