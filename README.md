@@ -44,7 +44,7 @@ php artisan test
 
 Do not copy another developer's `.env`, database, `vendor`, or `node_modules`. Those are intentionally excluded from Git.
 
-For the two-developer branch, pull-request, and conflict-resolution process, read [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md). For the shared-database workflow and rules for schema and data changes, read [COLLABORATION.md](COLLABORATION.md).
+For the two-developer branch, pull-request, and conflict-resolution process, read [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md). For the shared-database workflow, read [COLLABORATION.md](COLLABORATION.md). Record every shared migration or seeder update in [DATABASE_CHANGES.md](DATABASE_CHANGES.md).
 
 Windows developers can update the code, dependencies, database schema, assets, and tests with one command:
 
