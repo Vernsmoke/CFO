@@ -44,7 +44,9 @@ php artisan test
 
 Do not copy another developer's `.env`, database, `vendor`, or `node_modules`. Those are intentionally excluded from Git.
 
-For the complete shared-database workflow, daily update commands, and rules for schema and data changes, read [COLLABORATION.md](COLLABORATION.md). Windows developers can update the code, dependencies, database schema, assets, and tests with one command:
+For the two-developer branch, pull-request, and conflict-resolution process, read [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md). For the shared-database workflow and rules for schema and data changes, read [COLLABORATION.md](COLLABORATION.md).
+
+Windows developers can update the code, dependencies, database schema, assets, and tests with one command:
 
 ```powershell
 .\scripts\sync.ps1
