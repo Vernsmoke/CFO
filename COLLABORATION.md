@@ -47,7 +47,7 @@ Only one developer needs to seed an empty shared database:
 php artisan db:seed
 ```
 
-Before seeding, set a private `CFO_DEMO_PASSWORD` in `.env`. Do not repeatedly seed real or production data.
+During local development, the seeded demo accounts temporarily use `ChangeMe123!`. Set a private `CFO_DEMO_PASSWORD` before any real deployment. Do not repeatedly seed real or production data.
 
 ## Receiving code and database-structure updates
 

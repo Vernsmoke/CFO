@@ -21,7 +21,7 @@ New-Item database/database.sqlite -ItemType File -Force
 php artisan key:generate
 ```
 
-Open `.env` and replace `choose-a-strong-local-demo-password` with a private password. Then finish setup:
+The local demo accounts temporarily use `ChangeMe123!`. Replace `CFO_DEMO_PASSWORD` before any real deployment. Then finish setup:
 
 ```powershell
 php artisan migrate --seed
