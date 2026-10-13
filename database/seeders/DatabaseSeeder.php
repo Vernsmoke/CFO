@@ -12,8 +12,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $password = env('CFO_DEMO_PASSWORD');
-        if (!is_string($password) || trim($password) === '' || in_array($password, ['ChangeMe123!', 'choose-a-strong-local-demo-password'], true)) {
-            throw new \RuntimeException('CFO_DEMO_PASSWORD must be set to a private value before running the database seeder.');
+        if (!is_string($password) || trim($password) === '') {
+            throw new \RuntimeException('CFO_DEMO_PASSWORD must be set before running the database seeder.');
+        }
+        if (app()->environment('production') && in_array($password, ['ChangeMe123!', 'choose-a-strong-local-demo-password'], true)) {
+            throw new \RuntimeException('CFO_DEMO_PASSWORD must use a private value in production.');
         }
         $student = User::updateOrCreate(['university_id' => '2024-0001'], ['name' => 'Alex Rivera', 'role' => 'student', 'active' => true, 'password' => Hash::make($password)]);
         User::updateOrCreate(['university_id' => '2024-0002'], ['name' => 'Jamie Santos', 'role' => 'student', 'active' => true, 'password' => Hash::make($password)]);
