@@ -4,18 +4,39 @@
 @php
     $user = auth()->user(); $staff = $user->isStaff();
     $nav = $staff
-        ? ['overview'=>'Overview','activities'=>'Activities','submissions'=>'Submissions','attendance'=>'Attendance','facilities'=>'Facilities','announcements'=>'Announcements','reports'=>'Reports','notifications'=>'Notifications']
-        : ['overview'=>'Overview','profile'=>'My profile','activities'=>'Activities','submissions'=>'My submissions','announcements'=>'Announcements','notifications'=>'Notifications'];
-    if ($user->isSuperAdmin()) $nav += ['accounts'=>'Accounts','settings'=>'Settings','audit'=>'Audit history'];
+        ? ['overview'=>['label'=>'Overview','icon'=>'overview'],'activities'=>['label'=>'Activities','icon'=>'activities'],'submissions'=>['label'=>'Submissions','icon'=>'submissions'],'attendance'=>['label'=>'Attendance','icon'=>'attendance'],'facilities'=>['label'=>'Facilities','icon'=>'facilities'],'announcements'=>['label'=>'Announcements','icon'=>'announcements'],'reports'=>['label'=>'Reports','icon'=>'reports'],'notifications'=>['label'=>'Notifications','icon'=>'notifications']]
+        : ['overview'=>['label'=>'Overview','icon'=>'overview'],'profile'=>['label'=>'My profile','icon'=>'profile'],'activities'=>['label'=>'Activities','icon'=>'activities'],'submissions'=>['label'=>'My submissions','icon'=>'submissions'],'announcements'=>['label'=>'Announcements','icon'=>'announcements'],'notifications'=>['label'=>'Notifications','icon'=>'notifications']];
+    if ($user->isSuperAdmin()) $nav += ['accounts'=>['label'=>'Accounts','icon'=>'accounts'],'settings'=>['label'=>'Settings','icon'=>'settings'],'audit'=>['label'=>'Audit history','icon'=>'audit']];
+    $initials = collect(explode(' ', trim($user->name)))->filter()->take(2)->map(fn ($part) => strtoupper(substr($part, 0, 1)))->implode('');
 @endphp
-<div class="workspace">
-    <aside class="sidebar" id="sidebar">
-        <a class="brand light" href="{{ route('dashboard') }}"><img src="{{ asset('images/cfo-logo.png') }}" alt="CFO logo"><span>Christian Formation Office</span></a>
-        <nav>@foreach($nav as $key => $label)<a class="{{ $section === $key ? 'active' : '' }}" href="{{ route('dashboard.section', $key) }}">{{ $label }}</a>@endforeach</nav>
-        <div class="sidebar-user"><span>{{ $user->name }}</span><small>{{ str_replace('_', ' ', ucfirst($user->role)) }} | {{ $user->university_id }}</small><form method="post" action="{{ route('logout') }}">@csrf<button>Sign out</button></form></div>
+<div class="workspace" data-workspace>
+    <svg class="nav-sprite" aria-hidden="true">
+        <symbol id="nav-overview" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9h13v-9M9.5 19v-5h5v5"/></symbol>
+        <symbol id="nav-profile" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.7-4 3-6 7-6s6.3 2 7 6"/></symbol>
+        <symbol id="nav-activities" viewBox="0 0 24 24"><path d="M5 3v3M19 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/><path d="m8 14 2 2 5-5"/></symbol>
+        <symbol id="nav-submissions" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7zM14 3v5h5M10 12h5M10 16h5"/></symbol>
+        <symbol id="nav-attendance" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+        <symbol id="nav-facilities" viewBox="0 0 24 24"><path d="M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6"/></symbol>
+        <symbol id="nav-announcements" viewBox="0 0 24 24"><path d="m4 13 12-5v8L4 11v2Z"/><path d="M7 14v5h4l-1-4M19 9v6"/></symbol>
+        <symbol id="nav-reports" viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></symbol>
+        <symbol id="nav-notifications" viewBox="0 0 24 24"><path d="M6 16h12l-1.5-2.5V10a4.5 4.5 0 0 0-9 0v3.5L6 16Z"/><path d="M10 19h4"/></symbol>
+        <symbol id="nav-accounts" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2"/><path d="M3 20c.5-4 2.5-6 6-6s5.5 2 6 6M15 15c3 0 4.5 1.5 5 4"/></symbol>
+        <symbol id="nav-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8l-.3 3.1a7 7 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 1.8 1l.3 3.1h4.8l.3-3.1a7 7 0 0 0 1.8-1l2.4 1 2-3.4-2-1.5a7 7 0 0 0 .1-1Z"/></symbol>
+        <symbol id="nav-audit" viewBox="0 0 24 24"><path d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h4"/></symbol>
+        <symbol id="nav-collapse" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM9 5v14M15 9l-3 3 3 3"/></symbol>
+        <symbol id="nav-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+        <symbol id="nav-signout" viewBox="0 0 24 24"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"/></symbol>
+    </svg>
+    <button class="sidebar-backdrop" type="button" data-menu-close aria-label="Close navigation" tabindex="-1"></button>
+    <aside class="sidebar" id="sidebar" aria-label="Workspace navigation">
+        <button class="sidebar-close" type="button" data-menu-close aria-label="Close navigation"><svg aria-hidden="true"><use href="#nav-close"></use></svg></button>
+        <a class="brand light" href="{{ route('dashboard') }}" aria-label="Christian Formation Office overview"><img src="{{ asset('images/cfo-logo.png') }}" alt=""><span>Christian Formation Office</span></a>
+        <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-label="Collapse navigation" aria-expanded="true" aria-controls="main-navigation"><svg aria-hidden="true"><use href="#nav-collapse"></use></svg><span>Collapse navigation</span></button>
+        <nav id="main-navigation" aria-label="Main navigation">@foreach($nav as $key => $item)<a class="nav-link {{ $section === $key ? 'active' : '' }}" href="{{ route('dashboard.section', $key) }}" aria-label="{{ $item['label'] }}" @if($section === $key) aria-current="page" @endif data-label="{{ $item['label'] }}"><span class="nav-icon"><svg aria-hidden="true"><use href="#nav-{{ $item['icon'] }}"></use></svg></span><span class="nav-label">{{ $item['label'] }}</span></a>@endforeach</nav>
+        <div class="sidebar-user"><span class="user-avatar" aria-hidden="true">{{ $initials }}</span><div class="user-details"><span>{{ $user->name }}</span><small>{{ str_replace('_', ' ', ucfirst($user->role)) }} | {{ $user->university_id }}</small></div><form method="post" action="{{ route('logout') }}">@csrf<button type="submit" aria-label="Sign out" data-label="Sign out"><svg aria-hidden="true"><use href="#nav-signout"></use></svg><span>Sign out</span></button></form></div>
     </aside>
-    <main class="content">
-        <header class="workspace-header"><button class="menu" type="button" data-menu aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false"><span></span><span></span><span></span></button><div><p class="eyebrow">CFO Workspace</p><h1>{{ $nav[$section] ?? ucfirst($section) }}</h1></div><span class="date">{{ now()->timezone('Asia/Manila')->format('M j, Y') }}</span></header>
+    <main class="content" id="main-content" tabindex="-1">
+        <header class="workspace-header"><button class="menu" type="button" data-menu aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><span></span><span></span><span></span></button><div><p class="eyebrow">CFO Workspace</p><h1>{{ $nav[$section]['label'] ?? ucfirst($section) }}</h1></div><span class="date">{{ now()->timezone('Asia/Manila')->format('M j, Y') }}</span></header>
         @if(session('success'))<div class="alert success">{{ session('success') }}</div>@endif
         @if($errors->any())<div class="alert error"><strong>Please check your entry.</strong><span>{{ $errors->first() }}</span></div>@endif
 
