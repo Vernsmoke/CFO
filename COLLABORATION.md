@@ -1,5 +1,7 @@
 # Collaboration and Database Workflow
 
+For step-by-step migration and seeder instructions and the database change history, read [DATABASE_CHANGES.md](DATABASE_CHANGES.md). Update that log in the same branch as every shared database change.
+
 This project synchronizes two different kinds of changes:
 
 - GitHub synchronizes application files, migrations, seeders, tests, and assets.
