@@ -247,6 +247,78 @@ document.addEventListener('DOMContentLoaded', () => {
         clearDock();
     });
 
+    document.querySelectorAll('[data-attendance-camera]').forEach(camera => {
+        const video = camera.querySelector('[data-camera-video]');
+        const canvas = camera.querySelector('[data-camera-canvas]');
+        const preview = camera.querySelector('[data-camera-preview]');
+        const fileInput = camera.querySelector('[data-camera-file]');
+        const startButton = camera.querySelector('[data-camera-start]');
+        const captureButton = camera.querySelector('[data-camera-capture]');
+        const submitButton = camera.querySelector('[data-camera-submit]');
+        const message = camera.querySelector('[data-camera-message]');
+        let stream;
+        let previewUrl;
+
+        const stopCamera = () => {
+            stream?.getTracks().forEach(track => track.stop());
+            stream = undefined;
+            if (video) video.srcObject = null;
+        };
+        const setMessage = value => { if (message) message.textContent = value; };
+
+        startButton?.addEventListener('click', async () => {
+            if (!navigator.mediaDevices?.getUserMedia) {
+                setMessage('This browser cannot access a live camera. Use a current browser over HTTPS or localhost.');
+                return;
+            }
+            try {
+                stopCamera();
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+                video.srcObject = stream;
+                await video.play();
+                video.hidden = false;
+                preview.hidden = true;
+                captureButton.disabled = false;
+                submitButton.disabled = true;
+                setMessage('Camera ready. Center your face, then take the photo.');
+            } catch {
+                setMessage('Camera access was not granted. Allow camera access in the browser and try again.');
+            }
+        });
+
+        captureButton?.addEventListener('click', () => {
+            if (!stream || !video.videoWidth || !video.videoHeight) return;
+            const maxWidth = 1280;
+            const scale = Math.min(1, maxWidth / video.videoWidth);
+            canvas.width = Math.round(video.videoWidth * scale);
+            canvas.height = Math.round(video.videoHeight * scale);
+            canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+                if (!blob) {
+                    setMessage('The photo could not be captured. Please try again.');
+                    return;
+                }
+                const transfer = new DataTransfer();
+                transfer.items.add(new File([blob], `staff-attendance-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+                fileInput.files = transfer.files;
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                previewUrl = URL.createObjectURL(blob);
+                preview.src = previewUrl;
+                preview.hidden = false;
+                video.hidden = true;
+                submitButton.disabled = false;
+                captureButton.disabled = true;
+                stopCamera();
+                setMessage('Photo captured. Confirm attendance or open the camera to retake it.');
+            }, 'image/jpeg', .86);
+        });
+
+        window.addEventListener('pagehide', () => {
+            stopCamera();
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        });
+    });
+
     document.querySelectorAll('form').forEach(form => form.addEventListener('submit', event => {
         const button = event.submitter ?? form.querySelector('button[type="submit"],button:not([type])');
         if (button) {
