@@ -15,4 +15,12 @@ class DocumentController extends Controller
         abort_unless(Storage::disk('local')->exists($record->path), 404);
         return Storage::disk('local')->download($record->path, $record->original_name, ['Content-Type' => $record->mime]);
     }
+
+    public function downloadRequirement(Request $request, int $submission)
+    {
+        $record = DB::table('requirement_submissions')->find($submission); abort_unless($record, 404);
+        abort_unless($request->user()->isStaff() || $record->user_id === $request->user()->id, 403);
+        abort_unless($record->path && Storage::disk('local')->exists($record->path), 404);
+        return Storage::disk('local')->download($record->path, $record->original_name, ['Content-Type' => $record->mime]);
+    }
 }
