@@ -13,17 +13,30 @@ class DashboardController extends Controller
         $allowed = $staff ? ['overview','activities','submissions','attendance','facilities','announcements','reports','notifications'] : ['overview','profile','activities','submissions','announcements','notifications'];
         if ($user->isSuperAdmin()) $allowed = array_merge($allowed, ['accounts','settings','audit']);
         abort_unless(in_array($section, $allowed, true), 404);
+        $profile = $user->role === 'student'
+            ? DB::table('profiles')->where('user_id', $user->id)->first()
+            : null;
+
+        $activities = DB::table('activities')->orderBy('activity_date');
+        $announcements = DB::table('announcements')->orderByDesc('created_at');
+        if ($user->role === 'student') {
+            $activities->where('status', 'Published');
+            $this->forDepartment($activities, $profile?->department);
+            $this->forDepartment($announcements, $profile?->department);
+        }
+
         $data = [
             'section' => $section,
-            'activities' => DB::table('activities')->orderBy('activity_date')->get(),
-            'announcements' => DB::table('announcements')->orderByDesc('created_at')->get(),
+            'activities' => $activities->get(),
+            'announcements' => $announcements->get(),
             'notifications' => DB::table('notifications')->where('user_id', $user->id)->orderByDesc('created_at')->get(),
         ];
         if ($user->role === 'student') {
-            $data['profile'] = DB::table('profiles')->where('user_id', $user->id)->first();
+            $data['profile'] = $profile;
             $data['registrations'] = DB::table('registrations as r')->join('activities as a', 'a.id', '=', 'r.activity_id')->where('r.user_id', $user->id)->select('r.*', 'a.title', 'a.activity_date')->orderByDesc('r.created_at')->get();
             $data['documents'] = DB::table('documents')->where('user_id', $user->id)->orderByDesc('created_at')->get();
         } else {
+            $data['profiles'] = DB::table('profiles as p')->join('users as u', 'u.id', '=', 'p.user_id')->select('p.*', 'u.name as student_name', 'u.university_id')->orderBy('u.name')->get();
             $data['registrations'] = DB::table('registrations as r')->join('users as u', 'u.id', '=', 'r.user_id')->join('activities as a', 'a.id', '=', 'r.activity_id')->select('r.*', 'u.name as student_name', 'u.university_id', 'a.title', 'a.activity_date')->orderByDesc('r.created_at')->get();
             $data['facilities'] = DB::table('facility_requests as f')->join('users as u', 'u.id', '=', 'f.user_id')->select('f.*', 'u.name as requester')->orderByDesc('starts_at')->get();
             $data['documents'] = DB::table('documents as d')->join('users as u', 'u.id', '=', 'd.user_id')->select('d.*', 'u.name as student_name')->orderByDesc('d.created_at')->get();
@@ -34,5 +47,13 @@ class DashboardController extends Controller
             $data['audits'] = DB::table('audit_logs as l')->leftJoin('users as u', 'u.id', '=', 'l.actor_id')->select('l.*', 'u.name as actor')->orderByDesc('l.created_at')->limit(200)->get();
         }
         return view('dashboard', $data);
+    }
+
+    private function forDepartment($query, ?string $department): void
+    {
+        $query->where(function ($query) use ($department) {
+            $query->where('department', 'All departments');
+            if ($department) $query->orWhere('department', $department);
+        });
     }
 }

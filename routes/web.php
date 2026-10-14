@@ -16,6 +16,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/{section}', [DashboardController::class, 'index'])->name('dashboard.section');
     Route::post('/profile', [WorkflowController::class, 'profile'])->name('profile.save');
+    Route::patch('/profiles/{profile}', [WorkflowController::class, 'reviewProfile'])->name('profiles.review');
     Route::post('/activities', [WorkflowController::class, 'activity'])->name('activities.create');
     Route::post('/activities/{activity}/register', [WorkflowController::class, 'register'])->name('activities.register');
     Route::patch('/registrations/{registration}', [WorkflowController::class, 'reviewRegistration'])->name('registrations.review');

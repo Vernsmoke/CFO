@@ -16,7 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuClosers = document.querySelectorAll('[data-menu-close]');
     const mainContent = document.querySelector('#main-content');
     const mobileQuery = window.matchMedia('(max-width: 900px)');
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     let menuWasOpen = false;
+    let sidebarAnimations = [];
 
     const setMenu = open => {
         open = Boolean(open && mobileQuery.matches);
@@ -78,9 +80,66 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sidebarToggle) sidebarToggle.title = collapsed ? 'Expand navigation' : 'Collapse navigation';
     };
     updateToggle(Boolean(workspace?.classList.contains('nav-collapsed')));
+
+    const sidebarMotionParts = '.brand, .sidebar-toggle, .nav-link, .sidebar-user';
+    const stopSidebarMotion = () => {
+        sidebarAnimations.forEach(animation => animation.cancel());
+        sidebarAnimations = [];
+    };
+    const captureSidebarLayout = () => {
+        if (!sidebar || mobileQuery.matches || reducedMotionQuery.matches) return null;
+        stopSidebarMotion();
+        return {
+            bounds: sidebar.getBoundingClientRect(),
+            radius: getComputedStyle(sidebar).borderRadius,
+            items: new Map([...sidebar.querySelectorAll(sidebarMotionParts)]
+                .filter(item => item.getClientRects().length > 0)
+                .map(item => [item, item.getBoundingClientRect()])),
+        };
+    };
+    const animateSidebarLayout = (before, collapsed) => {
+        if (!before || !sidebar || typeof sidebar.animate !== 'function') return;
+        const after = sidebar.getBoundingClientRect();
+        const animate = (target, frames, delay = 0) => {
+            const animation = target.animate(frames, {
+                duration: 460 - delay,
+                delay,
+                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                fill: 'backwards',
+            });
+            sidebarAnimations.push(animation);
+        };
+        animate(sidebar, [
+            { width: `${before.bounds.width}px`, borderRadius: before.radius },
+            { width: `${after.width}px`, borderRadius: getComputedStyle(sidebar).borderRadius },
+        ]);
+        [...sidebar.querySelectorAll(sidebarMotionParts)]
+            .filter(item => item.getClientRects().length > 0)
+            .forEach(item => {
+                const previous = before.items.get(item);
+                if (!previous) return;
+                const bounds = item.getBoundingClientRect();
+                const x = previous.left - before.bounds.left - (bounds.left - after.left);
+                const y = previous.top - before.bounds.top - (bounds.top - after.top);
+                animate(item, [
+                    { transform: `translate(${x}px, ${y}px)` },
+                    { transform: 'translate(0, 0)' },
+                ]);
+            });
+        if (!collapsed) {
+            sidebar.querySelectorAll('.nav-label, .sidebar-toggle span').forEach((label, index) => {
+                animate(label, [
+                    { opacity: 0, transform: 'translateX(-8px)' },
+                    { opacity: 1, transform: 'translateX(0)' },
+                ], 90 + Math.min(index * 14, 126));
+            });
+        }
+    };
     sidebarToggle?.addEventListener('click', () => {
+        const before = captureSidebarLayout();
         const collapsed = !workspace?.classList.contains('nav-collapsed');
         updateToggle(collapsed);
+        animateSidebarLayout(before, collapsed);
         try {
             localStorage.setItem('cfo-sidebar', collapsed ? 'compact' : 'expanded');
         } catch {
@@ -104,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const rect = element.getBoundingClientRect();
             tooltip.textContent = element.dataset.label || element.getAttribute('aria-label');
             tooltip.style.top = `${rect.top + rect.height / 2}px`;
+            tooltip.style.left = `${(sidebar?.getBoundingClientRect().right ?? rect.right) + 10}px`;
             tooltip.classList.add('visible');
         };
         tooltipTimer = window.setTimeout(reveal, immediate ? 0 : 180);
@@ -117,11 +177,88 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebar?.addEventListener('scroll', hideTooltip, true);
     sidebarToggle?.addEventListener('click', hideTooltip);
 
-    document.querySelectorAll('form').forEach(form => form.addEventListener('submit', () => {
-        const button = form.querySelector('button[type="submit"],button:not([type])');
+    const dock = sidebar?.querySelector('.animated-dock');
+    const finePointerQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const dockItems = [...(dock?.querySelectorAll('.nav-icon') ?? [])].map(icon => ({
+        icon,
+        scale: 1,
+        velocity: 0,
+        target: 1,
+    }));
+    let dockFrame = 0;
+    let dockPrevious = 0;
+    const animateDock = time => {
+        const delta = Math.min((time - (dockPrevious || time - 16)) / 1000, .032);
+        dockPrevious = time;
+        let moving = false;
+        dockItems.forEach(item => {
+            item.velocity += ((item.target - item.scale) * 240 - item.velocity * 22) * delta;
+            item.scale += item.velocity * delta;
+            if (Math.abs(item.target - item.scale) < .001 && Math.abs(item.velocity) < .001) {
+                item.scale = item.target;
+                item.velocity = 0;
+            } else {
+                moving = true;
+            }
+            item.icon.style.transform = `scale(${item.scale})`;
+        });
+        dockFrame = moving ? requestAnimationFrame(animateDock) : 0;
+        if (!moving) dockPrevious = 0;
+    };
+    const updateDock = pointerY => {
+        dockItems.forEach(item => {
+            const link = item.icon.closest('a');
+            if (!link) return;
+            const rect = link.getBoundingClientRect();
+            const proximity = Math.max(0, 1 - Math.abs(pointerY - rect.top - rect.height / 2) / 110);
+            item.target = 1 + proximity * .22;
+        });
+        if (!dockFrame) dockFrame = requestAnimationFrame(animateDock);
+    };
+    const clearDock = () => {
+        cancelAnimationFrame(dockFrame);
+        dockFrame = 0;
+        dockPrevious = 0;
+        dockItems.forEach(item => {
+            item.scale = 1;
+            item.velocity = 0;
+            item.target = 1;
+            item.icon.style.removeProperty('transform');
+        });
+    };
+    dock?.addEventListener('pointermove', event => {
+        if (!reducedMotionQuery.matches && finePointerQuery.matches && event.pointerType === 'mouse') {
+            updateDock(event.clientY);
+        }
+    });
+    dock?.addEventListener('pointerleave', () => updateDock(Infinity));
+    dock?.addEventListener('focusin', event => {
+        if (reducedMotionQuery.matches) return;
+        const link = event.target.closest('a');
+        if (!link) return;
+        const rect = link.getBoundingClientRect();
+        updateDock(rect.top + rect.height / 2);
+    });
+    dock?.addEventListener('focusout', () => updateDock(Infinity));
+    reducedMotionQuery.addEventListener('change', clearDock);
+    finePointerQuery.addEventListener('change', clearDock);
+    window.addEventListener('resize', () => {
+        stopSidebarMotion();
+        clearDock();
+    });
+
+    document.querySelectorAll('form').forEach(form => form.addEventListener('submit', event => {
+        const button = event.submitter ?? form.querySelector('button[type="submit"],button:not([type])');
         if (button) {
+            if (button.name) {
+                const submittedValue = document.createElement('input');
+                submittedValue.type = 'hidden';
+                submittedValue.name = button.name;
+                submittedValue.value = button.value;
+                form.append(submittedValue);
+            }
             button.disabled = true;
-            button.dataset.label = button.textContent;
+            button.dataset.label = button.textContent.trim();
             button.textContent = 'Working…';
         }
     }));

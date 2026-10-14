@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -110,7 +111,92 @@ class CfoWorkflowTest extends TestCase
         $this->assertStringContainsString("'+Formula activity", $content);
     }
 
-    private function createActivity(User $admin, int $capacity, string $title = 'Test activity'): int
+    public function test_students_only_see_published_activities_for_their_department(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create();
+        DB::table('profiles')->insert([
+            'user_id' => $student->id, 'department' => 'CIT', 'year' => '3', 'section' => 'A',
+            'contact' => 'student@example.invalid', 'status' => 'Verified', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $this->createActivity($admin, 10, 'Visible department activity', 'Published', 'CIT');
+        $this->createActivity($admin, 10, 'Visible all-departments activity', 'Published', 'All departments');
+        $this->createActivity($admin, 10, 'Hidden draft activity', 'Draft', 'CIT');
+        $this->createActivity($admin, 10, 'Hidden other-department activity', 'Published', 'Nursing');
+
+        $this->actingAs($student)->get('/dashboard/activities')
+            ->assertSee('Visible department activity')
+            ->assertSee('Visible all-departments activity')
+            ->assertDontSee('Hidden draft activity')
+            ->assertDontSee('Hidden other-department activity');
+    }
+
+    public function test_students_only_see_announcements_for_their_department(): void
+    {
+        $student = User::factory()->create();
+        DB::table('profiles')->insert([
+            'user_id' => $student->id, 'department' => 'CIT', 'year' => '3', 'section' => 'A',
+            'contact' => 'student@example.invalid', 'status' => 'Verified', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        foreach ([['All students', 'All departments'], ['CIT students', 'CIT'], ['Nursing students', 'Nursing']] as [$title, $department]) {
+            DB::table('announcements')->insert(['title' => $title, 'body' => 'Update', 'department' => $department, 'author_id' => User::factory()->admin()->create()->id, 'created_at' => now(), 'updated_at' => now()]);
+        }
+
+        $this->actingAs($student)->get('/dashboard/announcements')
+            ->assertSee('All students')
+            ->assertSee('CIT students')
+            ->assertDontSee('Nursing students');
+    }
+
+    public function test_staff_can_review_a_student_profile(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create();
+        $profile = DB::table('profiles')->insertGetId([
+            'user_id' => $student->id, 'department' => 'CIT', 'year' => '3', 'section' => 'A',
+            'contact' => 'student@example.invalid', 'status' => 'Pending verification', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->patch("/profiles/{$profile}", ['status' => 'Verified', 'note' => 'Record confirmed.'])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('profiles', ['id' => $profile, 'status' => 'Verified', 'note' => 'Record confirmed.']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $student->id, 'message' => 'Your profile status is now Verified.']);
+    }
+
+    public function test_attendance_requires_an_accepted_registration_and_preserves_first_checkpoint(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create();
+        $activity = $this->createActivity($admin, 10);
+        $registration = DB::table('registrations')->insertGetId([
+            'user_id' => $student->id, 'activity_id' => $activity, 'status' => 'Submitted',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->post("/registrations/{$registration}/attendance", ['checkpoint' => 'in'])
+            ->assertSessionHasErrors('attendance');
+        DB::table('registrations')->where('id', $registration)->update(['status' => 'Accepted']);
+        $this->actingAs($admin)->post("/registrations/{$registration}/attendance", ['checkpoint' => 'out'])
+            ->assertSessionHasErrors('attendance');
+
+        Carbon::setTestNow('2026-10-14 09:00:00');
+        $this->actingAs($admin)->post("/registrations/{$registration}/attendance", ['checkpoint' => 'in'])
+            ->assertSessionHas('success', 'Attendance recorded.');
+        Carbon::setTestNow('2026-10-14 09:15:00');
+        $this->actingAs($admin)->post("/registrations/{$registration}/attendance", ['checkpoint' => 'in'])
+            ->assertSessionHas('success', 'Attendance was already recorded.');
+        $this->assertDatabaseHas('attendance', ['registration_id' => $registration, 'time_in' => '2026-10-14 09:00:00']);
+        Carbon::setTestNow();
+    }
+
+    public function test_account_update_returns_not_found_for_missing_user(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+        $this->actingAs($superAdmin)->patch('/accounts/999999', ['role' => 'student', 'active' => true])->assertNotFound();
+    }
+
+    private function createActivity(User $admin, int $capacity, string $title = 'Test activity', string $status = 'Published', string $department = 'All departments'): int
     {
         return DB::table('activities')->insertGetId([
             'title' => $title,
@@ -119,9 +205,9 @@ class CfoWorkflowTest extends TestCase
             'activity_date' => now()->addDays(10)->toDateString(),
             'activity_time' => '08:00',
             'venue' => 'Test venue',
-            'department' => 'All departments',
+            'department' => $department,
             'deadline' => now()->addDays(5)->toDateString(),
-            'status' => 'Published',
+            'status' => $status,
             'capacity' => $capacity,
             'created_by' => $admin->id,
             'created_at' => now(),

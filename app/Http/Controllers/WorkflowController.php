@@ -13,9 +13,26 @@ class WorkflowController extends Controller
     {
         abort_unless($request->user()->role === 'student', 403);
         $data = $request->validate(['department' => ['required','string','max:150'], 'year' => ['required','string','max:20'], 'section' => ['required','string','max:50'], 'contact' => ['required','string','max:150']]);
-        DB::table('profiles')->updateOrInsert(['user_id' => $request->user()->id], [...$data, 'status' => 'Pending verification', 'note' => null, 'created_at' => now(), 'updated_at' => now()]);
+        $existing = DB::table('profiles')->where('user_id', $request->user()->id)->exists();
+        $values = [...$data, 'status' => 'Pending verification', 'note' => null, 'updated_at' => now()];
+        if ($existing) DB::table('profiles')->where('user_id', $request->user()->id)->update($values);
+        else DB::table('profiles')->insert(['user_id' => $request->user()->id, ...$values, 'created_at' => now()]);
         $this->audit($request, 'Submitted profile', $request->user()->university_id);
         return back()->with('success', 'Profile submitted for verification.');
+    }
+
+    public function reviewProfile(Request $request, int $profile)
+    {
+        $this->staff($request);
+        $data = $request->validate([
+            'status' => ['required', Rule::in(['Verified','Requires correction'])],
+            'note' => ['nullable','string','max:2000', Rule::requiredIf(fn () => $request->input('status') === 'Requires correction')],
+        ]);
+        $record = DB::table('profiles')->find($profile); abort_unless($record, 404);
+        DB::table('profiles')->where('id', $profile)->update([...$data, 'updated_at' => now()]);
+        $this->notify($record->user_id, "Your profile status is now {$data['status']}.");
+        $this->audit($request, 'Reviewed profile', (string) $profile, $data['status']);
+        return back()->with('success', 'Profile review saved.');
     }
 
     public function activity(Request $request)
@@ -119,7 +136,24 @@ class WorkflowController extends Controller
     {
         $this->staff($request); $data = $request->validate(['checkpoint' => ['required', Rule::in(['in','out'])]]);
         $column = $data['checkpoint'] === 'in' ? 'time_in' : 'time_out';
-        DB::table('attendance')->updateOrInsert(['registration_id' => $registration], [$column => now(), 'created_at' => now(), 'updated_at' => now()]);
+        $result = DB::transaction(function () use ($registration, $column) {
+            $record = DB::table('registrations')->where('id', $registration)->lockForUpdate()->first();
+            abort_unless($record, 404);
+            if ($record->status !== 'Accepted') return ['error' => 'Attendance can only be recorded for accepted registrations.'];
+
+            $entry = DB::table('attendance')->where('registration_id', $registration)->lockForUpdate()->first();
+            if ($column === 'time_out' && !$entry?->time_in) return ['error' => 'Record time in before time out.'];
+            if ($entry?->{$column}) return ['existing' => true];
+
+            if ($entry) {
+                DB::table('attendance')->where('id', $entry->id)->update([$column => now(), 'updated_at' => now()]);
+            } else {
+                DB::table('attendance')->insert(['registration_id' => $registration, 'time_in' => now(), 'time_out' => null, 'created_at' => now(), 'updated_at' => now()]);
+            }
+            return ['saved' => true];
+        });
+        if (isset($result['error'])) return back()->withErrors(['attendance' => $result['error']]);
+        if (isset($result['existing'])) return back()->with('success', 'Attendance was already recorded.');
         $this->audit($request, 'Recorded attendance', (string) $registration, $data['checkpoint']);
         return back()->with('success', 'Attendance recorded.');
     }
@@ -160,6 +194,7 @@ class WorkflowController extends Controller
     public function account(Request $request, int $user)
     {
         abort_unless($request->user()->isSuperAdmin(), 403); abort_if($request->user()->id === $user, 422, 'You cannot change your own access here.');
+        abort_unless(DB::table('users')->where('id', $user)->exists(), 404);
         $data = $request->validate(['role' => ['required', Rule::in(['student','admin','super_admin'])], 'active' => ['required','boolean'], 'password' => ['nullable','string','min:10','max:128']]);
         $update = ['role' => $data['role'], 'active' => $data['active'], 'updated_at' => now()]; if (!empty($data['password'])) $update['password'] = Hash::make($data['password']);
         DB::table('users')->where('id', $user)->update($update); DB::table('sessions')->where('user_id', $user)->delete();
