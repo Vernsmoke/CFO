@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/facilities', [WorkflowController::class, 'facility'])->name('facilities.create');
     Route::patch('/facilities/{facility}', [WorkflowController::class, 'decideFacility'])->name('facilities.decide');
     Route::post('/announcements', [WorkflowController::class, 'announcement'])->name('announcements.create');
+    Route::patch('/notifications/{notification}/read', [WorkflowController::class, 'readNotification'])->name('notifications.read-one');
     Route::post('/notifications/read', [WorkflowController::class, 'readNotifications'])->name('notifications.read');
     Route::patch('/accounts/{user}', [WorkflowController::class, 'account'])->name('accounts.update');
     Route::post('/accounts', [WorkflowController::class, 'createAccount'])->name('accounts.create');

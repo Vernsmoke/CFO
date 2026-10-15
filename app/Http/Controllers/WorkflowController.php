@@ -114,7 +114,7 @@ class WorkflowController extends Controller
                 'updated_at' => now(),
             ]);
         });
-        $this->notify($record->user_id, 'CFO Staff updated your name or academic details.');
+        $this->notify($record->user_id, 'CFO Staff updated your name or academic details.', 'profile', 'profile');
         $this->audit($request, 'Updated student identity and academic details', $record->university_id);
 
         return back()->with('success', 'Student identity and academic details updated.');
@@ -130,7 +130,7 @@ class WorkflowController extends Controller
         $record = DB::table('profiles')->find($profile);
         abort_unless($record, 404);
         DB::table('profiles')->where('id', $profile)->update([...$data, 'updated_at' => now()]);
-        $this->notify($record->user_id, "Your profile status is now {$data['status']}.");
+        $this->notify($record->user_id, "Your profile status is now {$data['status']}.", 'profile', 'profile');
         $this->audit($request, 'Reviewed profile', (string) $profile, $data['status']);
 
         return back()->with('success', 'Profile review saved.');
@@ -211,7 +211,7 @@ class WorkflowController extends Controller
         });
         if ($data['status'] === 'Published') {
             foreach ($matchedStudents as $student) {
-                $this->notify($student->id, "A new {$data['type']} activity was assigned to your class: {$data['title']}.");
+                $this->notify($student->id, "A new {$data['type']} activity was assigned to your class: {$data['title']}.", 'activity', 'activities');
             }
         }
         $this->audit($request, 'Created activity', (string) $id, $data['title']);
@@ -395,7 +395,7 @@ class WorkflowController extends Controller
         $record = DB::table('registrations')->find($registration);
         abort_unless($record, 404);
         DB::table('registrations')->where('id', $registration)->update([...$data, 'updated_at' => now()]);
-        $this->notify($record->user_id, "Your registration status is now {$data['status']}.");
+        $this->notify($record->user_id, "Your registration status is now {$data['status']}.", 'registration', 'submissions');
         $this->audit($request, 'Reviewed registration', (string) $registration, $data['status']);
 
         return back()->with('success', 'Registration updated.');
@@ -423,7 +423,7 @@ class WorkflowController extends Controller
         $record = DB::table('documents')->find($document);
         abort_unless($record, 404);
         DB::table('documents')->where('id', $document)->update([...$data, 'reviewed_at' => now(), 'updated_at' => now()]);
-        $this->notify($record->user_id, "A submitted document was marked {$data['status']}.");
+        $this->notify($record->user_id, "A submitted document was marked {$data['status']}.", 'document', 'submissions');
         $this->audit($request, 'Reviewed document', (string) $document, $data['status']);
 
         return back()->with('success', 'Document review saved.');
@@ -469,7 +469,7 @@ class WorkflowController extends Controller
         $record = DB::table('requirement_submissions')->find($submission);
         abort_unless($record, 404);
         DB::table('requirement_submissions')->where('id', $submission)->update([...$data, 'reviewed_at' => now(), 'updated_at' => now()]);
-        $this->notify($record->user_id, "An activity requirement was marked {$data['status']}.");
+        $this->notify($record->user_id, "An activity requirement was marked {$data['status']}.", 'requirement', 'submissions');
         $this->audit($request, 'Reviewed activity requirement', (string) $submission, $data['status']);
 
         return back()->with('success', 'Requirement review saved.');
@@ -498,7 +498,7 @@ class WorkflowController extends Controller
             }
         }
         DB::table('facility_requests')->where('id', $facility)->update([...$data, 'updated_at' => now()]);
-        $this->notify($record->user_id, "Your {$record->facility} request is now {$data['status']}.");
+        $this->notify($record->user_id, "Your {$record->facility} request is now {$data['status']}.", 'facility', 'facilities');
         $this->audit($request, 'Reviewed facility request', (string) $facility, $data['status']);
 
         return back()->with('success', 'Facility request updated.');
@@ -516,7 +516,7 @@ class WorkflowController extends Controller
             ->when($data['target_year'], fn ($query, $year) => $query->where('p.year', $year))
             ->when($data['target_section'], fn ($query, $section) => $query->where('p.section', $section))->pluck('u.id');
         foreach ($students as $studentId) {
-            $this->notify($studentId, 'New announcement: '.$data['title']);
+            $this->notify($studentId, 'New announcement: '.$data['title'], 'announcement', 'announcements');
         }
         $this->audit($request, 'Published announcement', $data['title']);
 
@@ -528,6 +528,17 @@ class WorkflowController extends Controller
         DB::table('notifications')->where('user_id', $request->user()->id)->whereNull('read_at')->update(['read_at' => now(), 'updated_at' => now()]);
 
         return back()->with('success', 'Notifications marked as read.');
+    }
+
+    public function readNotification(Request $request, int $notification)
+    {
+        $updated = DB::table('notifications')
+            ->where('id', $notification)
+            ->where('user_id', $request->user()->id)
+            ->update(['read_at' => now(), 'updated_at' => now()]);
+        abort_unless($updated || DB::table('notifications')->where('id', $notification)->where('user_id', $request->user()->id)->exists(), 404);
+
+        return back()->with('success', 'Notification marked as read.');
     }
 
     public function account(Request $request, int $user)
@@ -651,9 +662,16 @@ class WorkflowController extends Controller
         abort_unless($request->user()->isStaff(), 403);
     }
 
-    private function notify(int $userId, string $message): void
+    private function notify(int $userId, string $message, ?string $category = null, ?string $actionSection = null): void
     {
-        DB::table('notifications')->insert(['user_id' => $userId, 'message' => $message, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('notifications')->insert([
+            'user_id' => $userId,
+            'message' => $message,
+            'category' => $category,
+            'action_section' => $actionSection,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     private function audit(Request $request, string $action, string $target, ?string $detail = null): void
