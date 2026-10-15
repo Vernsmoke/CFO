@@ -67,13 +67,17 @@ GitHub Actions runs the PHP tests and production frontend build for every push a
 
 The seed command creates fictional accounts for local testing:
 
-| Role | University ID Number |
-|---|---|
-| Student | `2024-0001` or `2024-0002` |
-| Admin | `CFO-001` |
-| Super Admin | `ADM-001` |
+| Role | University ID Number | Email login |
+|---|---|---|
+| Student | `2024-0001` | `alex@example.invalid` |
+| Student | `2024-0002` | `jamie@example.invalid` |
+| Admin | `CFO-001` | Not available |
+| Super Admin | `ADM-001` | Not available |
 
-All seeded accounts use the `CFO_DEMO_PASSWORD` value from `.env`.
+All seeded accounts use the `CFO_DEMO_PASSWORD` value from `.env`. The tracked
+`.env.example` sets the public local-demo password to `ChangeMe123!`, so a fresh
+clone receives the same credential after copying `.env.example` to `.env` and
+running `php artisan migrate --seed`. Never use this demo password in production.
 
 ## Main modules
 
