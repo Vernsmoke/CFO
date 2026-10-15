@@ -28,8 +28,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
             $table->string('token_hash', 64)->unique();
-            $table->timestamp('expires_at');
-            $table->timestamp('last_sent_at');
+            // DATETIME avoids legacy MySQL/MariaDB restrictions on multiple
+            // required TIMESTAMP columns without implicit default values.
+            $table->dateTime('expires_at');
+            $table->dateTime('last_sent_at');
             $table->timestamp('used_at')->nullable();
             $table->timestamps();
         });
@@ -38,7 +40,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('token_hash', 64)->unique();
-            $table->timestamp('expires_at');
+            $table->dateTime('expires_at');
             $table->timestamp('used_at')->nullable();
             $table->timestamps();
         });
