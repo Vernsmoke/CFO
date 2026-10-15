@@ -199,7 +199,63 @@ class CfoWorkflowTest extends TestCase
             ->assertSessionHas('success');
 
         $this->assertDatabaseHas('profiles', ['id' => $profile, 'status' => 'Verified', 'note' => 'Record confirmed.']);
-        $this->assertDatabaseHas('notifications', ['user_id' => $student->id, 'message' => 'Your profile status is now Verified.']);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $student->id,
+            'message' => 'Your profile status is now Verified.',
+            'category' => 'profile',
+            'action_section' => 'profile',
+        ]);
+    }
+
+    public function test_student_can_open_and_individually_read_an_actionable_notification(): void
+    {
+        $student = User::factory()->create();
+        $otherStudent = User::factory()->create();
+        $notification = DB::table('notifications')->insertGetId([
+            'user_id' => $student->id,
+            'message' => 'Your registration needs a correction.',
+            'category' => 'registration',
+            'action_section' => 'submissions',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($student)->get('/dashboard/notifications')
+            ->assertOk()
+            ->assertSee('1 unread update')
+            ->assertSee('View submission')
+            ->assertSee('Mark as read');
+
+        $this->actingAs($otherStudent)->patch("/notifications/{$notification}/read")->assertNotFound();
+        $this->actingAs($student)->patch("/notifications/{$notification}/read")->assertSessionHas('success');
+        $this->assertDatabaseMissing('notifications', ['id' => $notification, 'read_at' => null]);
+    }
+
+    public function test_empty_student_submission_page_guides_student_to_activities(): void
+    {
+        $student = User::factory()->create();
+
+        $this->actingAs($student)->get('/dashboard/submissions')
+            ->assertOk()
+            ->assertSee('Your activity record will appear here.')
+            ->assertSee('Browse activities');
+    }
+
+    public function test_student_submission_page_shows_review_progress_and_next_step(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create();
+        $this->createProfile($student);
+        $activity = $this->createActivity($admin, 30, 'Student progress retreat');
+
+        $this->actingAs($student)->post("/activities/{$activity}/register")->assertSessionHas('success');
+
+        $this->actingAs($student)->get('/dashboard/submissions')
+            ->assertOk()
+            ->assertSee('Registration progress')
+            ->assertSee('Student progress retreat')
+            ->assertSee('CFO review')
+            ->assertSee('Wait for CFO review');
     }
 
     public function test_only_staff_can_change_student_name_and_academic_details(): void
