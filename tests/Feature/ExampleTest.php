@@ -14,8 +14,9 @@ class ExampleTest extends TestCase
         $response
             ->assertStatus(200)
             ->assertSee('id="sign-in"', false)
-            ->assertSee('name="university_id"', false)
+            ->assertSee('name="login"', false)
             ->assertSee('name="password"', false)
+            ->assertSee('Create Student Account')
             ->assertDontSee('nav-cta');
     }
 }

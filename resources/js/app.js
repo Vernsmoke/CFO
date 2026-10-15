@@ -9,6 +9,95 @@ try {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    const studentCatalogSource = document.querySelector('[data-student-catalog]');
+    const studentAccountForm = document.querySelector('[data-student-account-form]');
+    if (studentCatalogSource && studentAccountForm) {
+        try {
+            const catalog = JSON.parse(studentCatalogSource.textContent);
+            const department = studentAccountForm.querySelector('[data-student-department]');
+            const course = studentAccountForm.querySelector('[data-student-course]');
+            const major = studentAccountForm.querySelector('[data-student-major]');
+            const majorField = studentAccountForm.querySelector('[data-student-major-field]');
+            const fill = (select, values, prompt, selected = '') => {
+                select.replaceChildren(new Option(prompt, ''));
+                values.forEach(value => select.add(new Option(value, value, false, value === selected)));
+                select.disabled = values.length === 0;
+            };
+            const fillMajors = (selected = '') => {
+                const majors = catalog[department.value]?.[course.value] ?? [];
+                fill(major, majors, 'Select major', selected);
+                major.required = majors.length > 0;
+                major.disabled = majors.length === 0;
+                majorField.classList.toggle('is-visible', majors.length > 0);
+                majorField.setAttribute('aria-hidden', String(majors.length === 0));
+            };
+            const fillCourses = (selectedCourse = '', selectedMajor = '') => {
+                fill(course, Object.keys(catalog[department.value] ?? {}), 'Select course', selectedCourse);
+                fillMajors(selectedMajor);
+            };
+            department.addEventListener('change', () => fillCourses());
+            course.addEventListener('change', () => fillMajors());
+            fillCourses(course.dataset.selected ?? '', major.dataset.selected ?? '');
+
+            studentAccountForm.querySelector('[data-uppercase-name]')?.addEventListener('input', event => {
+                event.currentTarget.value = event.currentTarget.value.toLocaleUpperCase();
+            });
+            studentAccountForm.querySelector('[data-uppercase-letter]')?.addEventListener('input', event => {
+                event.currentTarget.value = event.currentTarget.value.replace(/[^a-z]/gi, '').slice(0, 1).toUpperCase();
+            });
+
+            const password = studentAccountForm.querySelector('[data-registration-password]');
+            const confirmation = studentAccountForm.querySelector('[data-registration-password-confirm]');
+            const passwordStatus = studentAccountForm.querySelector('[data-password-match-status]');
+            const validatePasswordMatch = () => {
+                const mismatch = confirmation.value !== '' && password.value !== confirmation.value;
+                confirmation.setCustomValidity(mismatch ? 'The password and confirmation password must match.' : '');
+                passwordStatus.textContent = mismatch ? 'Passwords do not match.' : (confirmation.value ? 'Passwords match.' : 'Re-enter the same password.');
+            };
+            password.addEventListener('input', validatePasswordMatch);
+            confirmation.addEventListener('input', validatePasswordMatch);
+        } catch {
+            // Backend validation remains authoritative if configuration cannot be parsed.
+        }
+    }
+
+    const profileCatalogSource = document.querySelector('[data-profile-academic-catalog]');
+    const profileAcademicForm = document.querySelector('[data-profile-academic-form]');
+    if (profileCatalogSource && profileAcademicForm) {
+        try {
+            const catalog = JSON.parse(profileCatalogSource.textContent);
+            const department = profileAcademicForm.querySelector('[data-profile-department]');
+            const course = profileAcademicForm.querySelector('[data-profile-course]');
+            const major = profileAcademicForm.querySelector('[data-profile-major]');
+            const majorField = profileAcademicForm.querySelector('[data-profile-major-field]');
+            const fill = (select, values, prompt, selected = '') => {
+                select.replaceChildren(new Option(prompt, ''));
+                values.forEach(value => select.add(new Option(value, value, false, value === selected)));
+                select.disabled = values.length === 0;
+            };
+            const fillMajors = (selected = '') => {
+                const majors = catalog[department.value]?.[course.value] ?? [];
+                fill(major, majors, 'Select major', selected);
+                major.required = majors.length > 0;
+                major.disabled = majors.length === 0;
+                majorField.classList.toggle('is-visible', majors.length > 0);
+                majorField.setAttribute('aria-hidden', String(majors.length === 0));
+            };
+            const fillCourses = (selectedCourse = '', selectedMajor = '') => {
+                fill(course, Object.keys(catalog[department.value] ?? {}), 'Select course', selectedCourse);
+                fillMajors(selectedMajor);
+            };
+            department.addEventListener('change', () => fillCourses());
+            course.addEventListener('change', () => fillMajors());
+            profileAcademicForm.querySelector('[data-uppercase-letter]')?.addEventListener('input', event => {
+                event.currentTarget.value = event.currentTarget.value.replace(/[^a-z]/gi, '').slice(0, 1).toUpperCase();
+            });
+            fillCourses(course.dataset.selected ?? '', major.dataset.selected ?? '');
+        } catch {
+            // Backend validation remains authoritative if configuration cannot be parsed.
+        }
+    }
+
     const workspace = document.querySelector('[data-workspace]');
     const menu = document.querySelector('[data-menu]');
     const sidebar = document.querySelector('#sidebar');
@@ -313,6 +402,124 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 'image/jpeg', .86);
         });
 
+        window.addEventListener('pagehide', () => {
+            stopCamera();
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        });
+    });
+
+    document.querySelectorAll('[data-activity-create]').forEach(form => {
+        const type = form.querySelector('[data-activity-type]');
+        const massReflection = form.querySelector('[data-mass-reflection]');
+        const updateTypeOptions = () => {
+            if (massReflection) massReflection.hidden = type?.value !== 'Mass';
+        };
+        type?.addEventListener('change', updateTypeOptions);
+        updateTypeOptions();
+    });
+
+    document.querySelectorAll('[data-file-preview]').forEach(component => {
+        const input = component.querySelector('[data-preview-input]');
+        const box = component.querySelector('[data-preview-box]');
+        const image = component.querySelector('[data-preview-image]');
+        const name = component.querySelector('[data-preview-name]');
+        const remove = component.querySelector('[data-preview-remove]');
+        let previewUrl;
+        const clearPreview = () => {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+            previewUrl = undefined;
+            if (input) input.value = '';
+            if (image) {
+                image.removeAttribute('src');
+                image.hidden = true;
+            }
+            if (name) name.textContent = '';
+            if (box) box.hidden = true;
+        };
+        input?.addEventListener('change', () => {
+            const file = input.files?.[0];
+            if (!file) return clearPreview();
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+            previewUrl = undefined;
+            if (name) name.textContent = file.name;
+            if (image) {
+                if (file.type.startsWith('image/')) {
+                    previewUrl = URL.createObjectURL(file);
+                    image.src = previewUrl;
+                    image.hidden = false;
+                } else {
+                    image.hidden = true;
+                }
+            }
+            if (box) box.hidden = false;
+        });
+        remove?.addEventListener('click', clearPreview);
+        window.addEventListener('pagehide', () => { if (previewUrl) URL.revokeObjectURL(previewUrl); });
+    });
+
+    document.querySelectorAll('[data-mass-camera]').forEach(camera => {
+        const video = camera.querySelector('[data-mass-camera-video]');
+        const canvas = camera.querySelector('[data-mass-camera-canvas]');
+        const preview = camera.querySelector('[data-mass-camera-preview]');
+        const fileInput = camera.querySelector('[data-mass-camera-file]');
+        const sourceInput = camera.querySelector('[data-mass-camera-source]');
+        const startButton = camera.querySelector('[data-mass-camera-start]');
+        const captureButton = camera.querySelector('[data-mass-camera-capture]');
+        const retakeButton = camera.querySelector('[data-mass-camera-retake]');
+        const message = camera.querySelector('[data-mass-camera-message]');
+        let stream;
+        let previewUrl;
+
+        const stopCamera = () => {
+            stream?.getTracks().forEach(track => track.stop());
+            stream = undefined;
+            if (video) video.srcObject = null;
+        };
+        const setMessage = value => { if (message) message.textContent = value; };
+        const openCamera = async () => {
+            if (!navigator.mediaDevices?.getUserMedia) {
+                setMessage('A live camera is unavailable. Use a current browser over HTTPS or localhost.');
+                return;
+            }
+            try {
+                stopCamera();
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+                video.srcObject = stream;
+                await video.play();
+                video.hidden = false;
+                preview.hidden = true;
+                captureButton.disabled = false;
+                retakeButton.hidden = true;
+                setMessage('Camera ready. Frame yourself clearly, then select Capture Photo.');
+            } catch {
+                setMessage('Camera access was not granted. Allow camera access and try again.');
+            }
+        };
+        startButton?.addEventListener('click', openCamera);
+        retakeButton?.addEventListener('click', openCamera);
+        captureButton?.addEventListener('click', () => {
+            if (!stream || !video.videoWidth || !video.videoHeight) return;
+            const scale = Math.min(1, 1280 / video.videoWidth);
+            canvas.width = Math.round(video.videoWidth * scale);
+            canvas.height = Math.round(video.videoHeight * scale);
+            canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+                if (!blob) return setMessage('The photo could not be captured. Please try again.');
+                const transfer = new DataTransfer();
+                transfer.items.add(new File([blob], `mass-attendance-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+                fileInput.files = transfer.files;
+                sourceInput.value = 'live_camera';
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                previewUrl = URL.createObjectURL(blob);
+                preview.src = previewUrl;
+                preview.hidden = false;
+                video.hidden = true;
+                captureButton.disabled = true;
+                retakeButton.hidden = false;
+                stopCamera();
+                setMessage('Photo captured. You may retake it before submitting.');
+            }, 'image/jpeg', .86);
+        });
         window.addEventListener('pagehide', () => {
             stopCamera();
             if (previewUrl) URL.revokeObjectURL(previewUrl);

@@ -11,10 +11,10 @@ class ReportController extends Controller
     public function export(Request $request): StreamedResponse
     {
         abort_unless($request->user()->isStaff(), 403);
-        $rows = DB::table('registrations as r')->join('users as u', 'u.id', '=', 'r.user_id')->join('activities as a', 'a.id', '=', 'r.activity_id')->leftJoin('attendance as x', 'x.registration_id', '=', 'r.id')->select('u.university_id','u.name','a.title','a.activity_date','r.status','r.group_name','r.facilitator','x.time_in','x.time_out')->orderBy('a.activity_date')->get();
+        $rows = DB::table('registrations as r')->join('users as u', 'u.id', '=', 'r.user_id')->join('activities as a', 'a.id', '=', 'r.activity_id')->select('u.university_id','u.name','a.title','a.activity_date','r.status','r.group_name','r.facilitator')->orderBy('a.activity_date')->get();
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['University ID','Student','Activity','Date','Status','Group','Facilitator','Time in','Time out']);
+            fputcsv($out, ['University ID','Student','Activity','Date','Status','Group','Facilitator']);
             foreach ($rows as $row) {
                 fputcsv($out, array_map([$this, 'spreadsheetSafe'], (array) $row));
             }

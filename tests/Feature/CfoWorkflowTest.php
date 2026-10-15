@@ -4,10 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class CfoWorkflowTest extends TestCase
@@ -27,16 +27,15 @@ class CfoWorkflowTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
-    public function test_student_cannot_open_staff_attendance_page(): void
+    public function test_student_activity_attendance_page_is_not_available(): void
     {
-        $user = User::factory()->create();
-        $this->actingAs($user)->get('/dashboard/attendance')->assertNotFound();
-    }
-
-    public function test_admin_can_open_staff_attendance_page(): void
-    {
+        $student = User::factory()->create();
         $admin = User::factory()->admin()->create();
-        $this->actingAs($admin)->get('/dashboard/attendance')->assertOk();
+
+        $this->actingAs($student)->get('/dashboard/attendance')->assertNotFound();
+        $this->actingAs($admin)->get('/dashboard/attendance')->assertNotFound();
+        $this->actingAs($admin)->post('/registrations/1/attendance', ['checkpoint' => 'in'])->assertNotFound();
+        $this->actingAs($admin)->get('/dashboard')->assertOk()->assertDontSee('Activity attendance');
     }
 
     public function test_student_profile_page_shows_identity_status_and_grouped_fields(): void
@@ -55,6 +54,7 @@ class CfoWorkflowTest extends TestCase
         $firstStudent = User::factory()->create();
         $secondStudent = User::factory()->create();
         $activity = $this->createActivity($admin, 1);
+        $this->createProfile($secondStudent);
 
         DB::table('registrations')->insert([
             'user_id' => $firstStudent->id,
@@ -79,6 +79,7 @@ class CfoWorkflowTest extends TestCase
         $admin = User::factory()->admin()->create();
         $student = User::factory()->create();
         $activity = $this->createActivity($admin, 1);
+        $this->createProfile($student);
 
         DB::table('registrations')->insert([
             'user_id' => $student->id,
@@ -121,6 +122,8 @@ class CfoWorkflowTest extends TestCase
         $this->assertStringContainsString("'=2+3", $content);
         $this->assertStringContainsString("'@malicious", $content);
         $this->assertStringContainsString("'+Formula activity", $content);
+        $this->assertStringNotContainsString('Time in', $content);
+        $this->assertStringNotContainsString('Time out', $content);
     }
 
     public function test_students_only_see_published_activities_for_their_department(): void
@@ -132,15 +135,33 @@ class CfoWorkflowTest extends TestCase
             'contact' => 'student@example.invalid', 'status' => 'Verified', 'created_at' => now(), 'updated_at' => now(),
         ]);
         $this->createActivity($admin, 10, 'Visible department activity', 'Published', 'CIT');
-        $this->createActivity($admin, 10, 'Visible all-departments activity', 'Published', 'All departments');
+        $this->createActivity($admin, 10, 'Hidden all-departments activity', 'Published', 'All departments');
         $this->createActivity($admin, 10, 'Hidden draft activity', 'Draft', 'CIT');
         $this->createActivity($admin, 10, 'Hidden other-department activity', 'Published', 'Nursing');
 
         $this->actingAs($student)->get('/dashboard/activities')
             ->assertSee('Visible department activity')
-            ->assertSee('Visible all-departments activity')
+            ->assertDontSee('Hidden all-departments activity')
             ->assertDontSee('Hidden draft activity')
             ->assertDontSee('Hidden other-department activity');
+    }
+
+    public function test_student_cannot_register_for_an_activity_outside_their_audience(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create();
+        DB::table('profiles')->insert([
+            'user_id' => $student->id, 'department' => 'CIT', 'year' => '3', 'section' => 'A',
+            'contact' => 'student@example.invalid', 'status' => 'Verified', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $activity = $this->createActivity($admin, 10, 'Nursing-only activity', 'Published', 'Nursing');
+
+        $this->actingAs($student)->post("/activities/{$activity}/register")->assertNotFound();
+
+        $this->assertDatabaseMissing('registrations', [
+            'user_id' => $student->id,
+            'activity_id' => $activity,
+        ]);
     }
 
     public function test_students_only_see_announcements_for_their_department(): void
@@ -174,32 +195,6 @@ class CfoWorkflowTest extends TestCase
 
         $this->assertDatabaseHas('profiles', ['id' => $profile, 'status' => 'Verified', 'note' => 'Record confirmed.']);
         $this->assertDatabaseHas('notifications', ['user_id' => $student->id, 'message' => 'Your profile status is now Verified.']);
-    }
-
-    public function test_attendance_requires_an_accepted_registration_and_preserves_first_checkpoint(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $student = User::factory()->create();
-        $activity = $this->createActivity($admin, 10);
-        $registration = DB::table('registrations')->insertGetId([
-            'user_id' => $student->id, 'activity_id' => $activity, 'status' => 'Submitted',
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
-
-        $this->actingAs($admin)->post("/registrations/{$registration}/attendance", ['checkpoint' => 'in'])
-            ->assertSessionHasErrors('attendance');
-        DB::table('registrations')->where('id', $registration)->update(['status' => 'Accepted']);
-        $this->actingAs($admin)->post("/registrations/{$registration}/attendance", ['checkpoint' => 'out'])
-            ->assertSessionHasErrors('attendance');
-
-        Carbon::setTestNow('2026-10-14 09:00:00');
-        $this->actingAs($admin)->post("/registrations/{$registration}/attendance", ['checkpoint' => 'in'])
-            ->assertSessionHas('success', 'Attendance recorded.');
-        Carbon::setTestNow('2026-10-14 09:15:00');
-        $this->actingAs($admin)->post("/registrations/{$registration}/attendance", ['checkpoint' => 'in'])
-            ->assertSessionHas('success', 'Attendance was already recorded.');
-        $this->assertDatabaseHas('attendance', ['registration_id' => $registration, 'time_in' => '2026-10-14 09:00:00']);
-        Carbon::setTestNow();
     }
 
     public function test_account_update_returns_not_found_for_missing_user(): void
@@ -245,6 +240,92 @@ class CfoWorkflowTest extends TestCase
         $this->actingAs($student)->get('/dashboard/activities')
             ->assertOk()->assertSee('Upcoming activities')->assertSee('Places')
             ->assertSee('Second year recollection')->assertDontSee('Third year recollection');
+        $this->actingAs($student)->post("/activities/{$hidden}/register")->assertNotFound();
+    }
+
+    public function test_publishing_requires_target_confirmation_and_notifies_only_exact_matches(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $matching = User::factory()->create();
+        $otherSection = User::factory()->create();
+        $this->createProfile($matching, 'BSIT', '3', 'A');
+        $this->createProfile($otherSection, 'BSIT', '3', 'B');
+        $payload = $this->activityPayload('BSIT 3A Mass', 'Mass', 'BSIT', '3', 'A');
+
+        $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'create'])
+            ->assertSessionHasErrors('target_confirmation');
+
+        $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'preview'])
+            ->assertSessionHas('activity_target_preview.count', 1);
+        $token = session('activity_target_preview.token');
+        $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'create', 'target_confirmation' => $token])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('activities', ['title' => 'BSIT 3A Mass', 'created_by' => $admin->id, 'department' => 'BSIT', 'target_year' => '3', 'target_section' => 'A']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $matching->id]);
+        $this->assertDatabaseMissing('notifications', ['user_id' => $otherSection->id]);
+    }
+
+    public function test_recollection_and_retreat_forms_use_activity_specific_labels_without_signature(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create(['email' => 'forms@example.test']);
+        $this->createProfile($student, 'BSIT', '3', 'A');
+
+        foreach (['Recollection', 'Retreat'] as $type) {
+            $payload = $this->activityPayload("{$type} for BSIT 3A", $type, 'BSIT', '3', 'A');
+            $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'preview']);
+            $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'create', 'target_confirmation' => session('activity_target_preview.token')]);
+        }
+
+        $response = $this->actingAs($student)->get('/dashboard/activities');
+        $response->assertOk()
+            ->assertSee('Recollection Form')->assertSee('Recollection Details')
+            ->assertSee('Retreat Form')->assertSee('Retreat Details')
+            ->assertSee('Upload Payment Receipt')
+            ->assertDontSee('Type your full name as your signature');
+        $this->assertDatabaseMissing('activity_form_fields', ['label' => 'Type your full name as your signature']);
+    }
+
+    public function test_mass_requires_live_photo_and_honors_required_reflection_setting(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create();
+        $this->createProfile($student);
+        $activity = $this->createActivity($admin, 50, 'Required reflection Mass');
+        DB::table('activities')->where('id', $activity)->update(['type' => 'Mass']);
+        $photoRequirement = DB::table('activity_requirements')->insertGetId(['activity_id' => $activity, 'name' => 'Real-time attendance photo', 'type' => 'attendance_photo', 'required' => true, 'sort_order' => 0, 'created_at' => now(), 'updated_at' => now()]);
+        $reflectionRequirement = DB::table('activity_requirements')->insertGetId(['activity_id' => $activity, 'name' => 'Reflection attachment', 'type' => 'reflection_document', 'required' => true, 'sort_order' => 1, 'created_at' => now(), 'updated_at' => now()]);
+
+        $this->actingAs($student)->post("/activities/{$activity}/register")
+            ->assertSessionHasErrors(['attendance_photo', 'reflection_attachment']);
+        $this->actingAs($student)->post("/activities/{$activity}/register", [
+            'attendance_photo' => UploadedFile::fake()->image('mass.jpg'),
+            'capture_source' => 'live_camera',
+            'reflection_attachment' => UploadedFile::fake()->create('reflection.docx', 80, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+        ])->assertSessionHas('success');
+
+        $registration = DB::table('registrations')->where('activity_id', $activity)->where('user_id', $student->id)->value('id');
+        $this->assertDatabaseHas('requirement_submissions', ['registration_id' => $registration, 'requirement_id' => $photoRequirement, 'status' => 'Submitted']);
+        $this->assertDatabaseHas('requirement_submissions', ['registration_id' => $registration, 'requirement_id' => $reflectionRequirement, 'status' => 'Submitted']);
+    }
+
+    public function test_mass_allows_submission_without_an_optional_reflection(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create();
+        $this->createProfile($student);
+        $activity = $this->createActivity($admin, 50, 'Optional reflection Mass');
+        DB::table('activities')->where('id', $activity)->update(['type' => 'Mass']);
+        DB::table('activity_requirements')->insert(['activity_id' => $activity, 'name' => 'Real-time attendance photo', 'type' => 'attendance_photo', 'required' => true, 'sort_order' => 0, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('activity_requirements')->insert(['activity_id' => $activity, 'name' => 'Reflection attachment', 'type' => 'reflection_document', 'required' => false, 'sort_order' => 1, 'created_at' => now(), 'updated_at' => now()]);
+
+        $this->actingAs($student)->post("/activities/{$activity}/register", [
+            'attendance_photo' => UploadedFile::fake()->image('mass.jpg'),
+            'capture_source' => 'live_camera',
+        ])->assertSessionHas('success');
     }
 
     public function test_registration_questions_are_required_and_answers_are_saved(): void
@@ -252,6 +333,7 @@ class CfoWorkflowTest extends TestCase
         $admin = User::factory()->admin()->create();
         $student = User::factory()->create();
         $activity = $this->createActivity($admin, 50);
+        $this->createProfile($student);
         $field = DB::table('activity_form_fields')->insertGetId(['activity_id' => $activity, 'label' => 'Emergency contact', 'field_type' => 'text', 'required' => true, 'sort_order' => 0, 'created_at' => now(), 'updated_at' => now()]);
 
         $this->actingAs($student)->post("/activities/{$activity}/register")->assertSessionHasErrors("answers.{$field}");
@@ -265,6 +347,7 @@ class CfoWorkflowTest extends TestCase
         $admin = User::factory()->admin()->create();
         $student = User::factory()->create();
         $activity = $this->createActivity($admin, 50);
+        $this->createProfile($student);
         $this->actingAs($student)->post("/activities/{$activity}/register");
         $registration = DB::table('registrations')->where('user_id', $student->id)->where('activity_id', $activity)->value('id');
         $requirement = DB::table('activity_requirements')->insertGetId(['activity_id' => $activity, 'name' => 'Mass reflection', 'type' => 'reflection', 'required' => true, 'sort_order' => 0, 'created_at' => now(), 'updated_at' => now()]);
@@ -278,9 +361,13 @@ class CfoWorkflowTest extends TestCase
     public function test_retreat_creation_adds_the_standard_form_and_receipt_requirement(): void
     {
         $admin = User::factory()->admin()->create();
-        $payload = ['title' => 'Senior retreat', 'type' => 'Retreat', 'description' => 'A guided Catholic retreat.', 'activity_date' => now()->addDays(20)->toDateString(), 'activity_time' => '08:00', 'venue' => 'Formation Center', 'department' => 'All departments', 'target_year' => '', 'target_section' => '', 'participation_type' => 'Required', 'deadline' => now()->addDays(10)->toDateString(), 'requirements' => '', 'required_documents' => '', 'registration_questions' => '', 'capacity' => 80, 'status' => 'Published'];
+        $student = User::factory()->create();
+        $this->createProfile($student, 'CIT', '4', 'A');
+        $payload = ['title' => 'Senior retreat', 'type' => 'Retreat', 'description' => 'A guided Catholic retreat.', 'activity_date' => now()->addDays(20)->toDateString(), 'activity_time' => '08:00', 'venue' => 'Formation Center', 'department' => 'CIT', 'target_year' => '4', 'target_section' => 'A', 'participation_type' => 'Required', 'deadline' => now()->addDays(10)->toDateString(), 'requirements' => '', 'required_documents' => '', 'registration_questions' => '', 'capacity' => 80, 'status' => 'Published'];
 
-        $this->actingAs($admin)->post('/activities', $payload)->assertSessionHas('success');
+        $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'preview'])->assertSessionHas('activity_target_preview');
+        $token = session('activity_target_preview.token');
+        $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'create', 'target_confirmation' => $token])->assertSessionHas('success');
         $activity = DB::table('activities')->where('title', 'Senior retreat')->value('id');
         $this->assertDatabaseHas('activity_form_fields', ['activity_id' => $activity, 'label' => 'Emergency contact person', 'section_name' => 'Emergency information']);
         $this->assertDatabaseHas('activity_form_fields', ['activity_id' => $activity, 'label' => 'Is this your first Catholic retreat?', 'field_type' => 'select']);
@@ -294,12 +381,16 @@ class CfoWorkflowTest extends TestCase
         $student = User::factory()->create(['email' => 'student@example.test']);
         DB::table('profiles')->insert(['user_id' => $student->id, 'department' => 'Nursing', 'year' => '2', 'section' => 'B', 'contact' => '09170000000', 'status' => 'Verified', 'created_at' => now(), 'updated_at' => now()]);
         $payload = ['title' => 'Nursing recollection', 'type' => 'Recollection', 'description' => 'A guided recollection.', 'activity_date' => now()->addDays(20)->toDateString(), 'activity_time' => '08:00', 'venue' => 'Chapel', 'department' => 'Nursing', 'target_year' => '2', 'target_section' => 'B', 'participation_type' => 'Required', 'deadline' => now()->addDays(10)->toDateString(), 'requirements' => '', 'required_documents' => '', 'registration_questions' => '', 'capacity' => 80, 'status' => 'Published'];
-        $this->actingAs($admin)->post('/activities', $payload);
+        $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'preview']);
+        $token = session('activity_target_preview.token');
+        $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'create', 'target_confirmation' => $token]);
         $activity = DB::table('activities')->where('title', 'Nursing recollection')->value('id');
         $fields = DB::table('activity_form_fields')->where('activity_id', $activity)->get();
         $answers = [];
         foreach ($fields as $field) {
-            if (!$field->required && $field->field_type !== 'checkbox') continue;
+            if (! $field->required && $field->field_type !== 'checkbox') {
+                continue;
+            }
             $answers[$field->id] = match ($field->field_type) {
                 'number' => '20',
                 'select' => json_decode($field->options, true)[0],
@@ -323,6 +414,23 @@ class CfoWorkflowTest extends TestCase
         $this->assertDatabaseHas('users', ['university_id' => '2026-9001', 'email' => 'ana.reyes@example.test', 'role' => 'student', 'active' => true]);
     }
 
+    public function test_super_admin_can_create_an_account_without_an_email_field(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+
+        $this->actingAs($superAdmin)->post('/accounts', [
+            'name' => 'No Email Student',
+            'university_id' => '2026-9002',
+            'role' => 'student',
+            'password' => 'Temporary123!',
+        ])->assertSessionHas('success');
+
+        $this->assertDatabaseHas('users', [
+            'university_id' => '2026-9002',
+            'email' => null,
+        ]);
+    }
+
     public function test_cfo_staff_records_daily_time_in_and_time_out_with_photos(): void
     {
         Storage::fake('local');
@@ -339,6 +447,22 @@ class CfoWorkflowTest extends TestCase
         Storage::disk('local')->assertExists($entry->time_in_photo_path);
         Storage::disk('local')->assertExists($entry->time_out_photo_path);
         Carbon::setTestNow();
+    }
+
+    public function test_my_attendance_identifies_the_signed_in_staff_member(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'name' => 'Maria Dela Cruz',
+            'university_id' => 'CFO-001',
+        ]);
+
+        $this->actingAs($admin)->get('/dashboard/my-attendance')
+            ->assertOk()
+            ->assertSee('Attendance account')
+            ->assertSee('This checkpoint will be recorded for')
+            ->assertSee('Staff member')
+            ->assertSee('Maria Dela Cruz')
+            ->assertSee('CFO-001');
     }
 
     public function test_staff_attendance_prevents_duplicates_and_requires_time_in_first(): void
@@ -367,7 +491,68 @@ class CfoWorkflowTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['actor_id' => $superAdmin->id, 'action' => 'Corrected staff attendance', 'target' => (string) $attendance]);
     }
 
-    private function createActivity(User $admin, int $capacity, string $title = 'Test activity', string $status = 'Published', string $department = 'All departments'): int
+    public function test_only_super_admin_can_open_the_staff_attendance_monitor(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+
+        $this->actingAs($admin)->get('/dashboard/staff-attendance')->assertNotFound();
+        $this->actingAs($superAdmin)->get('/dashboard/staff-attendance')->assertOk();
+    }
+
+    public function test_super_admin_can_monitor_present_late_absent_incomplete_and_excused_staff(): void
+    {
+        Carbon::setTestNow('2026-10-15 10:00:00');
+        config([
+            'app.attendance.workday_start' => '08:00',
+            'app.attendance.late_grace_minutes' => 15,
+        ]);
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+        $present = User::factory()->admin()->create(['name' => 'Present Staff', 'university_id' => 'CFO-101']);
+        $late = User::factory()->admin()->create(['name' => 'Late Staff', 'university_id' => 'CFO-102']);
+        $absent = User::factory()->admin()->create(['name' => 'Absent Staff', 'university_id' => 'CFO-103']);
+        $incomplete = User::factory()->admin()->create(['name' => 'Incomplete Staff', 'university_id' => 'CFO-104']);
+        $excused = User::factory()->admin()->create(['name' => 'Excused Staff', 'university_id' => 'CFO-105']);
+
+        DB::table('staff_attendance')->insert([
+            ['user_id' => $present->id, 'work_date' => '2026-10-15', 'time_in' => '2026-10-15 07:55:00', 'time_out' => '2026-10-15 17:00:00', 'status' => 'Present', 'admin_note' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $late->id, 'work_date' => '2026-10-15', 'time_in' => '2026-10-15 08:30:00', 'time_out' => null, 'status' => 'Present', 'admin_note' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $incomplete->id, 'work_date' => '2026-10-15', 'time_in' => '2026-10-15 08:00:00', 'time_out' => null, 'status' => 'Incomplete', 'admin_note' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $excused->id, 'work_date' => '2026-10-15', 'time_in' => null, 'time_out' => null, 'status' => 'Excused', 'admin_note' => 'Approved leave.', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $response = $this->actingAs($superAdmin)->get('/dashboard/staff-attendance?attendance_date=2026-10-15');
+
+        $response->assertOk()
+            ->assertSee('CFO Staff attendance monitor')
+            ->assertSee('Late begins after 8:15 AM')
+            ->assertSee('Present Staff')->assertSee('CFO-101')
+            ->assertSee('Late Staff')->assertSee('CFO-102')
+            ->assertSee('Absent Staff')->assertSee('CFO-103')
+            ->assertSee('Incomplete Staff')->assertSee('CFO-104')
+            ->assertSee('Excused Staff')->assertSee('CFO-105')
+            ->assertSee('data-attendance-state="present"', false)
+            ->assertSee('data-attendance-state="late"', false)
+            ->assertSee('data-attendance-state="absent"', false)
+            ->assertSee('data-attendance-state="incomplete"', false)
+            ->assertSee('data-attendance-state="excused"', false);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_staff_attendance_monitor_rejects_future_dates(): void
+    {
+        Carbon::setTestNow('2026-10-15 10:00:00');
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+
+        $this->actingAs($superAdmin)
+            ->get('/dashboard/staff-attendance?attendance_date=2026-10-16')
+            ->assertSessionHasErrors('attendance_date');
+
+        Carbon::setTestNow();
+    }
+
+    private function createActivity(User $admin, int $capacity, string $title = 'Test activity', string $status = 'Published', string $department = 'CIT'): int
     {
         return DB::table('activities')->insertGetId([
             'title' => $title,
@@ -377,6 +562,9 @@ class CfoWorkflowTest extends TestCase
             'activity_time' => '08:00',
             'venue' => 'Test venue',
             'department' => $department,
+            'target_year' => '3',
+            'target_section' => 'A',
+            'participation_type' => 'Optional',
             'deadline' => now()->addDays(5)->toDateString(),
             'status' => $status,
             'capacity' => $capacity,
@@ -384,5 +572,41 @@ class CfoWorkflowTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    private function createProfile(User $student, string $department = 'CIT', string $year = '3', string $section = 'A'): void
+    {
+        DB::table('profiles')->insert([
+            'user_id' => $student->id,
+            'department' => $department,
+            'year' => $year,
+            'section' => $section,
+            'contact' => '09170000000',
+            'status' => 'Verified',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function activityPayload(string $title, string $type, string $department, string $year, string $section): array
+    {
+        return [
+            'title' => $title,
+            'type' => $type,
+            'description' => 'A formation activity for an exact academic group.',
+            'activity_date' => now()->addDays(20)->toDateString(),
+            'activity_time' => '08:00',
+            'venue' => 'University Chapel',
+            'department' => $department,
+            'target_year' => $year,
+            'target_section' => $section,
+            'participation_type' => 'Required',
+            'deadline' => now()->addDays(10)->toDateString(),
+            'requirements' => '',
+            'required_documents' => '',
+            'registration_questions' => '',
+            'capacity' => 80,
+            'status' => 'Published',
+        ];
     }
 }

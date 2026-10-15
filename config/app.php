@@ -84,6 +84,11 @@ return [
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
+    'attendance' => [
+        'workday_start' => env('CFO_WORKDAY_START', '08:00'),
+        'late_grace_minutes' => (int) env('CFO_LATE_GRACE_MINUTES', 15),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Encryption Key

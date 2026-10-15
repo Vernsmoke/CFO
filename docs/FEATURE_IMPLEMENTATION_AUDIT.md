@@ -1,5 +1,7 @@
 # CFO Feature Implementation Audit
 
+> Update, 15 October 2026: Activities now require exact course, year, and section targets, a reviewed matched-student count before publishing, activity-specific Recollection/Retreat forms without signatures, and Mass submission evidence. The Mass camera image is a private submission artifact, not a general student time-in/time-out attendance module.
+
 Audited on 11 October 2026 against the local `main` checkout at `abe570a`. This corrects the earlier blanket claim that all suggested improvements were complete. Application code was not changed during this audit.
 
 ## Evidence and verification
@@ -12,16 +14,16 @@ Local evidence: `.preview/feature-audit-observations.json` and `tests/browser/z-
 
 | Suggestion | Finding | Current behavior and remaining gap |
 | --- | --- | --- |
-| Individual document review | Core implemented; incomplete overview | Uploaded documents have decisions, correction feedback and protected replacement history. Required documents not yet uploaded have no proactive checklist or Missing status. Staff see missing names only after attempting acceptance. |
-| Attendance by activity | Implemented | CFO staff have an activity selector and matching participant list. Students cannot access attendance recording. |
+| Individual document review | Implemented for activity submissions | Required activity files are validated during submission, listed with Required or Optional status, privately downloadable, and reviewable by authorized staff. |
+| Attendance by activity | Limited to requested Mass proof | Mass activities require a live in-app camera capture stored as private submission evidence. There is no separate student time-in/time-out or roll-call module; CFO Staff work attendance remains separate. |
 | Next action after saving | Partial, with a confirmed message bug | Some responses explain the next step, but others are generic. Saving an already Published activity incorrectly says “Publish it when ready for registration.” Registration success replaces the form with Submitted and a submission link; the action’s detailed success message disappears. |
 | Separate consequential actions | Partial | Activity editing is separate from status changes; withdrawal is expandable and confirmed. Role editing and account active/disabled status still share one Update permissions form. There is no dedicated disable/re-enable action. |
 | Deadline/correction indicators | Implemented in basic form | Activity deadline labels, correction statuses, student dashboard attention notice and staff feedback exist. There is no explicit near-deadline countdown or missing-document progress checklist. Those are refinements, not previously confirmed university rules. |
 | Preserve filters while opening records | Implemented for current inline records and Back navigation | Search/filter/page values stay in the URL. Details expand inside the list. Leaving and returning with Back preserved the search and page in the browser audit. Clicking a fresh sidebar link does not restore a separately remembered last-used list URL. Dedicated record detail pages are not built. |
 | Useful report filters | Implemented | Activity, department, activity-date range, submission status and group affect displayed aggregates and staff CSV exports. Date filtering is based on the activity date, not attendance or registration timestamps. Aggregate viewers cannot export student records. |
-| Clear attendance outcomes | Implemented | Persistent Time-in/Time-out outcomes and a missing-time-out indicator appear beside participants. Duplicate server submissions do not create duplicate checkpoints. |
+| CFO Staff attendance outcomes | Implemented | CFO Staff record photo-backed time-in and time-out checkpoints. Super Admins can monitor present, late, absent, incomplete, and excused staff by date. |
 | Expandable secondary details | Implemented | Descriptions, record histories, previous document versions, document review controls and corrections expand on demand. |
-| Year/section targeting | Implemented as provisional pilot rules | Optional targets are enforced using submitted profile values. Official verification prerequisites, eligible year ranges and overrides remain university decisions. |
+| Year/section targeting | Implemented as exact rules | Course, year, and section are all required. Student lists, direct submissions, publishing confirmation, and notifications use exact profile matches. |
 | Participant grouping | Basic implementation; partial broader organization | Staff assign free-text group and facilitator per participant. Group filtering and facilitator text search exist. Section-based organization and a dedicated facilitator filter are absent. Bulk assignment and group management screens are also absent; these would be extensions, not explicit requirements in the original suggestion. |
 | Branding/facility settings | Implemented for administrators | Administrators can edit office name/facility choices and publish an approved PNG/JPEG logo. CFO staff and students do not have settings access. Confirmation assumes the administrator has an approved asset; there is no separate university branding approval workflow. |
 
@@ -34,7 +36,7 @@ Local evidence: `.preview/feature-audit-observations.json` and `tests/browser/z-
 ## Where controls are located
 
 - Individual document decisions: CFO staff → Submission review → uploaded document → Review this document. Without an upload there is no review control.
-- Attendance/groups: CFO staff → Attendance → select activity → participant → Participant group.
+- CFO Staff attendance: CFO Staff → My attendance. Super Admin monitoring: Super Admin → Staff attendance.
 - Targeting/required document names: CFO staff → Formation activities → Create or Edit activity.
 - Report filters/export: CFO staff → Reports. Viewers have aggregate filters but no student CSV export.
 - Branding/facility configuration: Administrator → Office settings.

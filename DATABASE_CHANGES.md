@@ -197,13 +197,49 @@ Copy this template to the top of the **Change history** section for every shared
 
 Add the newest entry first.
 
+### 2026-10-15 — Separate student department, course, and major
+
+- **Developer:** Project team
+- **Type:** Schema and seeder
+- **Status:** Applied locally
+- **Files:** `2026_10_15_000700_add_student_academic_program.php`, `config/student_registration.php`, and `database/seeders/DatabaseSeeder.php`
+- **Summary:** Adds distinct course and optional major fields to student profiles. New registrations use the approved Department → Course → Major catalog, while existing profiles continue to work through the legacy department-as-course fallback.
+- **Existing-data impact:** Existing profile values are preserved unchanged. The new course and major columns are nullable so legacy records remain valid.
+- **Required command:** `php artisan migrate`
+- **Rollback/backup notes:** Rolling back removes only the new course and major columns. Back up any new registrations first because those values would be lost.
+- **Pull request or commit:** To be added when this guide is committed.
+
+### 2026-10-15 — Add verified student email accounts
+
+- **Developer:** Project team
+- **Type:** Schema and data backfill
+- **Status:** Applied locally
+- **Files:** `2026_10_15_000600_add_student_email_authentication.php`
+- **Summary:** Adds student email-verification state, recorded terms/privacy consent, hashed single-use verification tokens, and hashed single-use password-reset tokens.
+- **Existing-data impact:** Existing active student accounts are marked Active with their current email treated as verified so their established access is preserved. Existing inactive students are marked Pending Verification.
+- **Required command:** `php artisan migrate`
+- **Rollback/backup notes:** Back up the database before rollback. Rollback removes verification and reset-token records plus the new student-account status and consent timestamps.
+- **Pull request or commit:** To be added when this guide is committed.
+
+### 2026-10-15 — Harden activity submissions
+
+- **Developer:** Project team
+- **Type:** Data transformation
+- **Status:** Applied locally
+- **Files:** `2026_10_15_000500_harden_activity_submissions.php`
+- **Summary:** Removes legacy signature fields from Recollection and Retreat forms and adds required live-photo plus optional reflection requirements to existing Mass activities. New activities also enforce exact course, year, and section targets in application code.
+- **Existing-data impact:** Legacy signature field definitions and their linked answers are deleted as requested. Existing Mass activities receive submission requirements without changing student registration records.
+- **Required command:** `php artisan migrate`
+- **Rollback/backup notes:** Back up the database before rollback. Rolling back removes the added Mass requirement definitions but does not recreate deleted signature answers.
+- **Pull request or commit:** To be added when this guide is committed.
+
 ### 2026-10-14 — Document current database baseline
 
 - **Developer:** Project team
 - **Type:** Schema and seeder baseline
 - **Status:** Applied
 - **Files:** `0001_01_01_000000_create_users_table.php`, `0001_01_01_000001_create_cache_table.php`, `0001_01_01_000002_create_jobs_table.php`, `2026_10_13_000100_create_cfo_tables.php`, and `database/seeders/DatabaseSeeder.php`
-- **Summary:** The project currently defines users, cache, jobs, profiles, activities, registrations, documents, attendance, facility requests, announcements, notifications, audit logs, and settings. The main seeder creates fictional development accounts, a student profile, sample activities, an announcement, and the office-name setting.
+- **Summary:** The project currently defines users, cache, jobs, profiles, activities, registrations, documents, CFO Staff attendance, facility requests, announcements, notifications, audit logs, and settings. A legacy student-attendance table remains unused to avoid destructively deleting old data; no student-attendance route or interface is exposed. The main seeder creates fictional development accounts, a student profile, sample activities, an announcement, and the office-name setting.
 - **Existing-data impact:** This entry documents the existing baseline and does not modify data.
 - **Required command:** New installations run `php artisan migrate --seed`; existing installations run `php artisan migrate`.
 - **Rollback/backup notes:** No rollback is required for this documentation entry. Back up important data before reversing baseline migrations.

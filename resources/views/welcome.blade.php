@@ -7,6 +7,7 @@
         <nav class="public-links" aria-label="Primary navigation">
             <a href="#services">Services</a>
             <a href="#journey">Your journey</a>
+            <a class="button small" href="{{ route('student.register') }}">Create Student Account</a>
         </nav>
     </header>
 
@@ -29,14 +30,15 @@
                         @csrf
                         <div class="hero-login-heading">
                             <div><p class="eyebrow">Secure access</p><h2 id="sign-in-title">Sign in to your workspace</h2></div>
-                            <span>University accounts</span>
+                            <span>Student and staff accounts</span>
                         </div>
                         @if($errors->any())<div class="hero-login-error" role="alert">{{ $errors->first() }}</div>@endif
                         <div class="hero-login-fields">
-                            <label>University ID Number<input name="university_id" value="{{ old('university_id') }}" autocomplete="username" placeholder="e.g. 2024-0001" required></label>
+                            <label>Email address or University ID<input name="login" value="{{ old('login', old('university_id')) }}" autocomplete="username" placeholder="student@example.com or CFO-001" required></label>
                             <label>Password<input type="password" name="password" autocomplete="current-password" placeholder="Enter your password" required></label>
                             <button class="button" type="submit">Sign in <span aria-hidden="true">→</span></button>
                         </div>
+                        <div class="hero-account-links"><a href="{{ route('student.register') }}">Create Student Account</a><a href="{{ route('student.password.forgot') }}">Forgot Password?</a></div>
                     </form>
                 </div>
                 <span class="visual-stamp stamp-one">Belong</span>
@@ -84,7 +86,7 @@
         <ol class="journey-steps">
             <li data-reveal><span>01</span><div><h3>Choose an activity</h3><p>See the programs available to you and check every requirement before registering.</p></div></li>
             <li data-reveal><span>02</span><div><h3>Complete your record</h3><p>Submit details and documents securely, then correct anything the office sends back.</p></div></li>
-            <li data-reveal><span>03</span><div><h3>Stay connected</h3><p>Return for confirmations, reminders, attendance, and the next opportunity to take part.</p></div></li>
+            <li data-reveal><span>03</span><div><h3>Stay connected</h3><p>Return for confirmations, reminders, and the next opportunity to take part.</p></div></li>
         </ol>
     </div>
 </section>

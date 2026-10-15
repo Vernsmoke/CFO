@@ -5,7 +5,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('activity_form_fields', function (Blueprint $table) {
@@ -20,7 +21,7 @@ return new class extends Migration {
                     ['field_type' => $field['type'], 'options' => isset($field['options']) ? json_encode($field['options']) : null, 'section_name' => $field['section'], 'required' => $field['required'], 'sort_order' => $order, 'created_at' => now(), 'updated_at' => now()]
                 );
             }
-            if (!DB::table('activity_requirements')->where('activity_id', $activity->id)->where('type', 'receipt')->exists()) {
+            if (! DB::table('activity_requirements')->where('activity_id', $activity->id)->where('type', 'receipt')->exists()) {
                 DB::table('activity_requirements')->insert(['activity_id' => $activity->id, 'name' => 'Payment receipt', 'type' => 'receipt', 'instructions' => 'Required during registration.', 'required' => true, 'sort_order' => 0, 'created_at' => now(), 'updated_at' => now()]);
             }
         }
@@ -36,6 +37,7 @@ return new class extends Migration {
     private function fields(string $type): array
     {
         $event = strtolower($type);
+
         return [
             ['section' => 'Personal information', 'label' => 'Nickname', 'type' => 'text', 'required' => true],
             ['section' => 'Personal information', 'label' => 'Age', 'type' => 'number', 'required' => true],
@@ -58,7 +60,6 @@ return new class extends Migration {
             ['section' => 'Personal reflection', 'label' => 'Prayer intentions, struggles, or concerns you wish to share', 'type' => 'textarea', 'required' => false],
             ['section' => 'Consent and commitment', 'label' => "I understand that this {$event} is a faith-based activity and I choose to participate with openness, respect, and confidentiality.", 'type' => 'checkbox', 'required' => true],
             ['section' => 'Consent and commitment', 'label' => "I understand that photos may be taken during this {$event} for University purposes.", 'type' => 'checkbox', 'required' => true],
-            ['section' => 'Consent and commitment', 'label' => 'Type your full name as your signature', 'type' => 'text', 'required' => true],
         ];
     }
 };

@@ -31,6 +31,8 @@ php artisan serve
 
 Open `http://127.0.0.1:8000`.
 
+Student self-registration uses the institution-approved Department → Course → Major catalog in `config/student_registration.php`. Year level and section are constrained to one digit and one uppercase letter. Verification and password-reset messages use Laravel mail; configure `MAIL_MAILER=smtp` and the approved SMTP credentials for delivery to real inboxes. The default local `log` mailer writes messages to the application log for development.
+
 Existing collaborators should run the following after syncing changes:
 
 ```powershell
@@ -76,10 +78,12 @@ All seeded accounts use the `CFO_DEMO_PASSWORD` value from `.env`.
 ## Main modules
 
 - Role-based login and protected sessions
+- Student self-registration with pending status, single-use email verification, verified-email login, resend cooldown, and password recovery
 - Student profiles
-- Activities and registrations
+- Exact course/year/section activity distribution with reviewed recipient counts
+- Activity-specific Recollection and Retreat forms, payment receipts, and Mass camera/reflection submissions
 - Private document upload, download, and review
-- Attendance checkpoints
+- Camera-based CFO Staff attendance with Super Admin monitoring
 - Facility requests with approved-booking conflict checks
 - Announcements and notifications
 - CSV participation reports

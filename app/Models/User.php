@@ -3,13 +3,14 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     /**
@@ -17,7 +18,7 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $fillable = ['university_id', 'name', 'email', 'role', 'active', 'password'];
+    protected $fillable = ['university_id', 'name', 'email', 'email_verified_at', 'terms_accepted_at', 'role', 'student_account_status', 'active', 'password'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -38,10 +39,19 @@ class User extends Authenticatable
     {
         return [
             'active' => 'boolean',
+            'email_verified_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
 
-    public function isStaff(): bool { return in_array($this->role, ['admin', 'super_admin'], true); }
-    public function isSuperAdmin(): bool { return $this->role === 'super_admin'; }
+    public function isStaff(): bool
+    {
+        return in_array($this->role, ['admin', 'super_admin'], true);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
 }
