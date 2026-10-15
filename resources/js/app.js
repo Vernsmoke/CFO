@@ -413,11 +413,43 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-activity-create]').forEach(form => {
         const type = form.querySelector('[data-activity-type]');
         const massReflection = form.querySelector('[data-mass-reflection]');
+        const availability = form.querySelector('[data-venue-availability]');
+        const scheduleFields = ['venue', 'activity_date', 'activity_time', 'activity_end_time']
+            .map(name => form.elements.namedItem(name));
+        let availabilityRequest;
         const updateTypeOptions = () => {
             if (massReflection) massReflection.hidden = type?.value !== 'Mass';
         };
+        const checkAvailability = async () => {
+            if (!availability || scheduleFields.some(field => !field?.value)) return;
+            availabilityRequest?.abort();
+            availabilityRequest = new AbortController();
+            availability.className = 'span-2 venue-availability is-checking';
+            availability.replaceChildren(Object.assign(document.createElement('strong'), { textContent: 'Checking venue…' }));
+            const query = new URLSearchParams(Object.fromEntries(scheduleFields.map(field => [field.name, field.value])));
+            try {
+                const response = await fetch(`${form.dataset.availabilityUrl}?${query}`, {
+                    headers: { Accept: 'application/json' },
+                    signal: availabilityRequest.signal,
+                });
+                if (!response.ok) throw new Error('Availability check failed');
+                const result = await response.json();
+                availability.className = `span-2 venue-availability is-${result.status}`;
+                const title = document.createElement('strong');
+                const message = document.createElement('span');
+                title.textContent = result.status === 'available' ? 'Venue available' : (result.status === 'occupied' ? 'Venue occupied' : 'Possible conflict');
+                message.textContent = result.message;
+                availability.replaceChildren(title, message);
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+                availability.className = 'span-2 venue-availability is-error';
+                availability.replaceChildren(Object.assign(document.createElement('strong'), { textContent: 'Availability could not be checked. The server will check again when you submit.' }));
+            }
+        };
         type?.addEventListener('change', updateTypeOptions);
+        scheduleFields.forEach(field => field?.addEventListener('change', checkAvailability));
         updateTypeOptions();
+        checkAvailability();
     });
 
     document.querySelectorAll('[data-file-preview]').forEach(component => {
