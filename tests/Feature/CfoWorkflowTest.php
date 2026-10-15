@@ -319,6 +319,7 @@ class CfoWorkflowTest extends TestCase
 
         $this->actingAs($admin)->get('/dashboard')
             ->assertOk()
+            ->assertSee('Here is what the office needs today.')
             ->assertSee('Review queue')
             ->assertSee('Coming up')
             ->assertDontSee('Account oversight');
@@ -327,6 +328,113 @@ class CfoWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('Account oversight')
             ->assertSee('Changed recently');
+    }
+
+    public function test_staff_submission_center_separates_activity_and_profile_reviews(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $pendingStudent = User::factory()->create(['name' => 'Pending Student']);
+        $verifiedStudent = User::factory()->create(['name' => 'Verified Student']);
+        $pendingActivity = $this->createActivity($admin, 20, 'Pending retreat');
+        $completedActivity = $this->createActivity($admin, 20, 'Completed retreat');
+
+        DB::table('profiles')->insert([
+            ['user_id' => $pendingStudent->id, 'department' => 'CIT', 'year' => '3', 'section' => 'A', 'contact' => '09170000001', 'status' => 'Pending verification', 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $verifiedStudent->id, 'department' => 'CIT', 'year' => '3', 'section' => 'B', 'contact' => '09170000002', 'status' => 'Verified', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+        DB::table('registrations')->insert([
+            ['user_id' => $pendingStudent->id, 'activity_id' => $pendingActivity, 'status' => 'Submitted', 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $verifiedStudent->id, 'activity_id' => $completedActivity, 'status' => 'Accepted', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $this->actingAs($admin)->get('/dashboard/submissions')
+            ->assertOk()
+            ->assertSee('Student review center')
+            ->assertSee('Pending Student')
+            ->assertSee('Pending retreat')
+            ->assertDontSee('Verified Student')
+            ->assertDontSee('Completed retreat');
+
+        $this->actingAs($admin)->get("/dashboard/submissions?review=all&review_activity={$completedActivity}")
+            ->assertOk()
+            ->assertSee('Verified Student')
+            ->assertSee('Completed retreat');
+
+        $this->actingAs($admin)->get('/dashboard/submissions?review=all&review_area=profiles')
+            ->assertOk()
+            ->assertSee('Pending Student')
+            ->assertSee('Verified Student')
+            ->assertDontSee('Pending retreat');
+    }
+
+    public function test_facilities_page_redirects_to_activities_and_legacy_writes_are_removed(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->get('/dashboard/facilities')->assertRedirect('/dashboard/activities');
+        $this->actingAs($admin)->post('/facilities')->assertNotFound();
+        $this->actingAs($admin)->patch('/facilities/1')->assertNotFound();
+        $this->actingAs($admin)->get('/dashboard')->assertOk()->assertDontSee('>Facilities<', false);
+    }
+
+    public function test_archived_announcement_moves_to_staff_history_and_is_hidden_from_students(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create();
+        $this->createProfile($student);
+        $announcement = DB::table('announcements')->insertGetId([
+            'title' => 'Formation reminder',
+            'body' => 'Bring your journal.',
+            'department' => 'CIT',
+            'author_id' => $admin->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->patch("/announcements/{$announcement}/archive", ['action' => 'archive'])->assertSessionHas('success');
+        $this->actingAs($student)->get('/dashboard/announcements')->assertOk()->assertDontSee('Formation reminder');
+        $this->actingAs($admin)->get('/dashboard/announcements?announcement_state=archived')->assertOk()
+            ->assertSee('Formation reminder')->assertSee('Archived');
+    }
+
+    public function test_report_page_and_csv_apply_the_same_activity_type_filter(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $firstStudent = User::factory()->create(['name' => 'Retreat Student']);
+        $secondStudent = User::factory()->create(['name' => 'Mass Student']);
+        $this->createProfile($firstStudent);
+        $this->createProfile($secondStudent);
+        $retreat = $this->createActivity($admin, 20, 'Filtered retreat');
+        $mass = $this->createActivity($admin, 20, 'Hidden mass');
+        DB::table('activities')->where('id', $mass)->update(['type' => 'Mass']);
+        DB::table('registrations')->insert([
+            ['user_id' => $firstStudent->id, 'activity_id' => $retreat, 'status' => 'Accepted', 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $secondStudent->id, 'activity_id' => $mass, 'status' => 'Accepted', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $this->actingAs($admin)->get('/dashboard/reports?report_type=Retreat')->assertOk()
+            ->assertSee('Retreat Student')->assertDontSee('Mass Student');
+        $csv = $this->actingAs($admin)->get('/reports/export?report_type=Retreat')->streamedContent();
+        $this->assertStringContainsString('Filtered retreat', $csv);
+        $this->assertStringNotContainsString('Hidden mass', $csv);
+    }
+
+    public function test_mark_filtered_notifications_read_only_updates_matching_category(): void
+    {
+        $admin = User::factory()->admin()->create();
+        DB::table('notifications')->insert([
+            ['user_id' => $admin->id, 'message' => 'Activity approved', 'category' => 'activity', 'action_section' => 'activities', 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $admin->id, 'message' => 'Profile waiting', 'category' => 'profile', 'action_section' => 'submissions', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $this->actingAs($admin)->post('/notifications/read', [
+            'scope' => 'filtered',
+            'notification_state' => 'unread',
+            'notification_category' => 'activity',
+        ])->assertSessionHas('success');
+
+        $this->assertNotNull(DB::table('notifications')->where('category', 'activity')->value('read_at'));
+        $this->assertNull(DB::table('notifications')->where('category', 'profile')->value('read_at'));
     }
 
     public function test_activity_targeting_uses_department_year_and_section(): void
@@ -348,7 +456,7 @@ class CfoWorkflowTest extends TestCase
 
     public function test_publishing_requires_target_confirmation_and_notifies_only_exact_matches(): void
     {
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->create(['role' => 'super_admin']);
         $matching = User::factory()->create();
         $otherSection = User::factory()->create();
         $this->createProfile($matching, 'BSIT', '3', 'A');
@@ -369,15 +477,138 @@ class CfoWorkflowTest extends TestCase
         $this->assertDatabaseMissing('notifications', ['user_id' => $otherSection->id]);
     }
 
+    public function test_staff_activity_requires_super_admin_approval_before_students_can_see_it(): void
+    {
+        $staff = User::factory()->admin()->create(['name' => 'CFO Planner']);
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+        $student = User::factory()->create();
+        $this->createProfile($student, 'BSIT', '3', 'A');
+        $payload = $this->activityPayload('Approval workflow retreat', 'Retreat', 'BSIT', '3', 'A');
+        $payload['status'] = 'Pending approval';
+
+        $this->actingAs($staff)->post('/activities', [...$payload, 'intent' => 'preview'])
+            ->assertSessionHas('activity_target_preview.count', 1);
+        $token = session('activity_target_preview.token');
+        $this->actingAs($staff)->post('/activities', [...$payload, 'intent' => 'create', 'target_confirmation' => $token])
+            ->assertSessionHas('success', 'Activity submitted for Super Admin approval.');
+
+        $activity = DB::table('activities')->where('title', 'Approval workflow retreat')->first();
+        $this->assertSame('Pending approval', $activity->status);
+        $this->assertDatabaseHas('notifications', ['user_id' => $superAdmin->id, 'category' => 'activity']);
+        $this->assertDatabaseMissing('notifications', ['user_id' => $student->id, 'category' => 'activity']);
+        $this->actingAs($student)->get('/dashboard/activities')->assertDontSee('Approval workflow retreat');
+        $this->actingAs($staff)->patch("/activities/{$activity->id}/decision", ['decision' => 'approve'])->assertForbidden();
+
+        $this->actingAs($superAdmin)->patch("/activities/{$activity->id}/decision", ['decision' => 'approve'])
+            ->assertSessionHas('success', 'Activity approved and published.');
+        $this->assertDatabaseHas('activities', ['id' => $activity->id, 'status' => 'Published', 'reviewed_by' => $superAdmin->id]);
+        $this->assertDatabaseHas('notifications', ['user_id' => $student->id, 'category' => 'activity']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $staff->id, 'category' => 'activity']);
+        $this->actingAs($student)->get('/dashboard/activities')->assertSee('Approval workflow retreat');
+    }
+
+    public function test_activity_venue_check_reports_confirmed_and_pending_conflicts(): void
+    {
+        $staff = User::factory()->admin()->create();
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+        $date = now()->addDays(20)->toDateString();
+        $published = $this->createActivity($superAdmin, 50, 'Existing chapel activity');
+        DB::table('activities')->where('id', $published)->update(['activity_date' => $date, 'activity_time' => '09:00', 'activity_end_time' => '11:00', 'venue' => 'University Chapel']);
+
+        $this->actingAs($staff)->getJson('/activities/availability?'.http_build_query([
+            'venue' => 'University Chapel',
+            'activity_date' => $date,
+            'activity_time' => '10:00',
+            'activity_end_time' => '12:00',
+        ]))->assertOk()->assertJson(['status' => 'occupied', 'confirmed_conflicts' => 1]);
+
+        DB::table('activities')->where('id', $published)->update(['status' => 'Pending approval']);
+        $this->actingAs($staff)->getJson('/activities/availability?'.http_build_query([
+            'venue' => 'University Chapel',
+            'activity_date' => $date,
+            'activity_time' => '10:00',
+            'activity_end_time' => '12:00',
+        ]))->assertOk()->assertJson(['status' => 'warning', 'pending_conflicts' => 1]);
+    }
+
+    public function test_super_admin_cannot_approve_an_activity_that_conflicts_with_a_facility_booking(): void
+    {
+        $staff = User::factory()->admin()->create();
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+        $student = User::factory()->create();
+        $this->createProfile($student, 'BSIT', '3', 'A');
+        $date = now()->addDays(20)->toDateString();
+        $activity = $this->createActivity($staff, 50, 'Conflicting retreat', 'Pending approval', 'BSIT');
+        DB::table('activities')->where('id', $activity)->update(['activity_date' => $date, 'activity_time' => '10:00', 'activity_end_time' => '12:00', 'venue' => 'Formation Center']);
+        DB::table('facility_requests')->insert([
+            'user_id' => $staff->id,
+            'facility' => 'Formation Center',
+            'purpose' => 'Office program',
+            'starts_at' => "{$date} 09:30:00",
+            'ends_at' => "{$date} 11:00:00",
+            'participants' => 40,
+            'status' => 'Approved',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($superAdmin)->patch("/activities/{$activity}/decision", ['decision' => 'approve'])
+            ->assertSessionHasErrors('activity');
+        $this->assertDatabaseHas('activities', ['id' => $activity, 'status' => 'Pending approval']);
+    }
+
+    public function test_staff_can_correct_and_resubmit_a_returned_activity(): void
+    {
+        $staff = User::factory()->admin()->create();
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+        $student = User::factory()->create();
+        $this->createProfile($student, 'BSIT', '3', 'A');
+        $activity = $this->createActivity($staff, 50, 'Activity needing correction', 'Pending approval', 'BSIT');
+
+        $this->actingAs($superAdmin)->patch("/activities/{$activity}/decision", [
+            'decision' => 'changes_requested',
+            'review_note' => 'Move this to the Formation Center.',
+        ])->assertSessionHas('success');
+        $this->assertDatabaseHas('activities', ['id' => $activity, 'status' => 'Changes requested', 'review_note' => 'Move this to the Formation Center.']);
+
+        $record = DB::table('activities')->find($activity);
+        $this->actingAs($staff)->patch("/activities/{$activity}", [
+            'title' => $record->title,
+            'description' => $record->description,
+            'activity_date' => $record->activity_date,
+            'activity_time' => '09:00',
+            'activity_end_time' => '13:00',
+            'venue' => 'Formation Center',
+            'department' => $record->department,
+            'target_year' => $record->target_year,
+            'target_section' => $record->target_section,
+            'participation_type' => $record->participation_type,
+            'deadline' => $record->deadline,
+            'requirements' => $record->requirements,
+            'capacity' => $record->capacity,
+        ])->assertSessionHas('success');
+        $this->actingAs($staff)->patch("/activities/{$activity}/submit")->assertSessionHas('success');
+
+        $this->assertDatabaseHas('activities', [
+            'id' => $activity,
+            'status' => 'Pending approval',
+            'venue' => 'Formation Center',
+            'review_note' => null,
+        ]);
+    }
+
     public function test_recollection_and_retreat_forms_use_activity_specific_labels_without_signature(): void
     {
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->create(['role' => 'super_admin']);
         $student = User::factory()->create(['email' => 'forms@example.test']);
         $this->createProfile($student, 'BSIT', '3', 'A');
 
         $activities = [];
         foreach (['Recollection', 'Retreat'] as $type) {
             $payload = $this->activityPayload("{$type} for BSIT 3A", $type, 'BSIT', '3', 'A');
+            if ($type === 'Retreat') {
+                $payload['venue'] = 'Formation Center';
+            }
             $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'preview']);
             $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'create', 'target_confirmation' => session('activity_target_preview.token')]);
             $activities[$type] = DB::table('activities')->where('title', "{$type} for BSIT 3A")->value('id');
@@ -473,10 +704,10 @@ class CfoWorkflowTest extends TestCase
 
     public function test_retreat_creation_adds_the_standard_form_and_receipt_requirement(): void
     {
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->create(['role' => 'super_admin']);
         $student = User::factory()->create();
         $this->createProfile($student, 'CIT', '4', 'A');
-        $payload = ['title' => 'Senior retreat', 'type' => 'Retreat', 'description' => 'A guided Catholic retreat.', 'activity_date' => now()->addDays(20)->toDateString(), 'activity_time' => '08:00', 'venue' => 'Formation Center', 'department' => 'CIT', 'target_year' => '4', 'target_section' => 'A', 'participation_type' => 'Required', 'deadline' => now()->addDays(10)->toDateString(), 'requirements' => '', 'required_documents' => '', 'registration_questions' => '', 'capacity' => 80, 'status' => 'Published'];
+        $payload = ['title' => 'Senior retreat', 'type' => 'Retreat', 'description' => 'A guided Catholic retreat.', 'activity_date' => now()->addDays(20)->toDateString(), 'activity_time' => '08:00', 'activity_end_time' => '16:00', 'venue' => 'Formation Center', 'department' => 'CIT', 'target_year' => '4', 'target_section' => 'A', 'participation_type' => 'Required', 'deadline' => now()->addDays(10)->toDateString(), 'requirements' => '', 'required_documents' => '', 'registration_questions' => '', 'capacity' => 80, 'status' => 'Published'];
 
         $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'preview'])->assertSessionHas('activity_target_preview');
         $token = session('activity_target_preview.token');
@@ -490,10 +721,10 @@ class CfoWorkflowTest extends TestCase
     public function test_verified_student_submits_formation_form_with_receipt(): void
     {
         Storage::fake('local');
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->create(['role' => 'super_admin']);
         $student = User::factory()->create(['email' => 'student@example.test']);
         DB::table('profiles')->insert(['user_id' => $student->id, 'department' => 'Nursing', 'year' => '2', 'section' => 'B', 'contact' => '09170000000', 'status' => 'Verified', 'created_at' => now(), 'updated_at' => now()]);
-        $payload = ['title' => 'Nursing recollection', 'type' => 'Recollection', 'description' => 'A guided recollection.', 'activity_date' => now()->addDays(20)->toDateString(), 'activity_time' => '08:00', 'venue' => 'Chapel', 'department' => 'Nursing', 'target_year' => '2', 'target_section' => 'B', 'participation_type' => 'Required', 'deadline' => now()->addDays(10)->toDateString(), 'requirements' => '', 'required_documents' => '', 'registration_questions' => '', 'capacity' => 80, 'status' => 'Published'];
+        $payload = ['title' => 'Nursing recollection', 'type' => 'Recollection', 'description' => 'A guided recollection.', 'activity_date' => now()->addDays(20)->toDateString(), 'activity_time' => '08:00', 'activity_end_time' => '12:00', 'venue' => 'University Chapel', 'department' => 'Nursing', 'target_year' => '2', 'target_section' => 'B', 'participation_type' => 'Required', 'deadline' => now()->addDays(10)->toDateString(), 'requirements' => '', 'required_documents' => '', 'registration_questions' => '', 'capacity' => 80, 'status' => 'Published'];
         $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'preview']);
         $token = session('activity_target_preview.token');
         $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'create', 'target_confirmation' => $token]);
@@ -673,7 +904,8 @@ class CfoWorkflowTest extends TestCase
             'description' => 'Test description',
             'activity_date' => now()->addDays(10)->toDateString(),
             'activity_time' => '08:00',
-            'venue' => 'Test venue',
+            'activity_end_time' => '12:00',
+            'venue' => 'University Chapel',
             'department' => $department,
             'target_year' => '3',
             'target_section' => 'A',
@@ -709,6 +941,7 @@ class CfoWorkflowTest extends TestCase
             'description' => 'A formation activity for an exact academic group.',
             'activity_date' => now()->addDays(20)->toDateString(),
             'activity_time' => '08:00',
+            'activity_end_time' => '12:00',
             'venue' => 'University Chapel',
             'department' => $department,
             'target_year' => $year,
