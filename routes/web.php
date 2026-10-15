@@ -27,11 +27,16 @@ Route::view('/privacy', 'legal.privacy')->name('privacy');
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::redirect('/dashboard/facilities', '/dashboard/activities')->name('facilities.legacy');
     Route::get('/dashboard/{section}', [DashboardController::class, 'index'])->name('dashboard.section');
     Route::post('/profile', [WorkflowController::class, 'profile'])->name('profile.save');
     Route::patch('/profiles/{profile}', [WorkflowController::class, 'reviewProfile'])->name('profiles.review');
     Route::patch('/profiles/{profile}/details', [WorkflowController::class, 'updateProfileDetails'])->name('profiles.details.update');
     Route::post('/activities', [WorkflowController::class, 'activity'])->name('activities.create');
+    Route::get('/activities/availability', [WorkflowController::class, 'activityAvailability'])->name('activities.availability');
+    Route::patch('/activities/{activity}', [WorkflowController::class, 'updateActivity'])->name('activities.update');
+    Route::patch('/activities/{activity}/submit', [WorkflowController::class, 'submitActivity'])->name('activities.submit');
+    Route::patch('/activities/{activity}/decision', [WorkflowController::class, 'decideActivity'])->name('activities.decision');
     Route::get('/activities/{activity}/register', [WorkflowController::class, 'registration'])->name('activities.registration');
     Route::post('/activities/{activity}/register', [WorkflowController::class, 'register'])->name('activities.register');
     Route::patch('/registrations/{registration}', [WorkflowController::class, 'reviewRegistration'])->name('registrations.review');
@@ -45,9 +50,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/staff-attendance', [StaffAttendanceController::class, 'record'])->name('staff-attendance.record');
     Route::get('/staff-attendance/{attendance}/photo/{checkpoint}', [StaffAttendanceController::class, 'photo'])->name('staff-attendance.photo');
     Route::patch('/staff-attendance/{attendance}', [StaffAttendanceController::class, 'update'])->name('staff-attendance.update');
-    Route::post('/facilities', [WorkflowController::class, 'facility'])->name('facilities.create');
-    Route::patch('/facilities/{facility}', [WorkflowController::class, 'decideFacility'])->name('facilities.decide');
     Route::post('/announcements', [WorkflowController::class, 'announcement'])->name('announcements.create');
+    Route::patch('/announcements/{announcement}/archive', [WorkflowController::class, 'archiveAnnouncement'])->name('announcements.archive');
     Route::patch('/notifications/{notification}/read', [WorkflowController::class, 'readNotification'])->name('notifications.read-one');
     Route::post('/notifications/read', [WorkflowController::class, 'readNotifications'])->name('notifications.read');
     Route::patch('/accounts/{user}', [WorkflowController::class, 'account'])->name('accounts.update');
