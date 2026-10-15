@@ -18,7 +18,7 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $fillable = ['university_id', 'name', 'email', 'email_verified_at', 'terms_accepted_at', 'role', 'student_account_status', 'active', 'password'];
+    protected $fillable = ['university_id', 'name', 'email', 'pending_email', 'email_verified_at', 'terms_accepted_at', 'role', 'student_account_status', 'active', 'password'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -53,5 +53,10 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return $this->role === 'super_admin';
+    }
+
+    public function routeNotificationForMail(): ?string
+    {
+        return $this->pending_email ?: $this->email;
     }
 }

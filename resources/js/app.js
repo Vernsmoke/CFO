@@ -62,37 +62,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const profileCatalogSource = document.querySelector('[data-profile-academic-catalog]');
-    const profileAcademicForm = document.querySelector('[data-profile-academic-form]');
-    if (profileCatalogSource && profileAcademicForm) {
+    const profileAcademicForms = document.querySelectorAll('[data-profile-academic-form]');
+    if (profileCatalogSource && profileAcademicForms.length) {
         try {
             const catalog = JSON.parse(profileCatalogSource.textContent);
-            const department = profileAcademicForm.querySelector('[data-profile-department]');
-            const course = profileAcademicForm.querySelector('[data-profile-course]');
-            const major = profileAcademicForm.querySelector('[data-profile-major]');
-            const majorField = profileAcademicForm.querySelector('[data-profile-major-field]');
-            const fill = (select, values, prompt, selected = '') => {
-                select.replaceChildren(new Option(prompt, ''));
-                values.forEach(value => select.add(new Option(value, value, false, value === selected)));
-                select.disabled = values.length === 0;
-            };
-            const fillMajors = (selected = '') => {
-                const majors = catalog[department.value]?.[course.value] ?? [];
-                fill(major, majors, 'Select major', selected);
-                major.required = majors.length > 0;
-                major.disabled = majors.length === 0;
-                majorField.classList.toggle('is-visible', majors.length > 0);
-                majorField.setAttribute('aria-hidden', String(majors.length === 0));
-            };
-            const fillCourses = (selectedCourse = '', selectedMajor = '') => {
-                fill(course, Object.keys(catalog[department.value] ?? {}), 'Select course', selectedCourse);
-                fillMajors(selectedMajor);
-            };
-            department.addEventListener('change', () => fillCourses());
-            course.addEventListener('change', () => fillMajors());
-            profileAcademicForm.querySelector('[data-uppercase-letter]')?.addEventListener('input', event => {
-                event.currentTarget.value = event.currentTarget.value.replace(/[^a-z]/gi, '').slice(0, 1).toUpperCase();
+            profileAcademicForms.forEach(profileAcademicForm => {
+                const department = profileAcademicForm.querySelector('[data-profile-department]');
+                const course = profileAcademicForm.querySelector('[data-profile-course]');
+                const major = profileAcademicForm.querySelector('[data-profile-major]');
+                const majorField = profileAcademicForm.querySelector('[data-profile-major-field]');
+                const fill = (select, values, prompt, selected = '') => {
+                    select.replaceChildren(new Option(prompt, ''));
+                    values.forEach(value => select.add(new Option(value, value, false, value === selected)));
+                    select.disabled = values.length === 0;
+                };
+                const fillMajors = (selected = '') => {
+                    const majors = catalog[department.value]?.[course.value] ?? [];
+                    fill(major, majors, 'Select major', selected);
+                    major.required = majors.length > 0;
+                    major.disabled = majors.length === 0;
+                    majorField.classList.toggle('is-visible', majors.length > 0);
+                    majorField.setAttribute('aria-hidden', String(majors.length === 0));
+                };
+                const fillCourses = (selectedCourse = '', selectedMajor = '') => {
+                    fill(course, Object.keys(catalog[department.value] ?? {}), 'Select course', selectedCourse);
+                    fillMajors(selectedMajor);
+                };
+                department.addEventListener('change', () => fillCourses());
+                course.addEventListener('change', () => fillMajors());
+                profileAcademicForm.querySelector('[data-uppercase-letter]')?.addEventListener('input', event => {
+                    event.currentTarget.value = event.currentTarget.value.replace(/[^a-z]/gi, '').slice(0, 1).toUpperCase();
+                });
+                fillCourses(course.dataset.selected ?? '', major.dataset.selected ?? '');
             });
-            fillCourses(course.dataset.selected ?? '', major.dataset.selected ?? '');
         } catch {
             // Backend validation remains authoritative if configuration cannot be parsed.
         }

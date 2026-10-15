@@ -45,7 +45,12 @@ class CfoWorkflowTest extends TestCase
 
         $this->actingAs($student)->get('/dashboard/profile')->assertOk()
             ->assertSee('Alex Rivera')->assertSee('2026-0101')->assertSee('Verified')
-            ->assertSee('Contact details')->assertSee('Academic details')->assertSee('Save profile changes');
+            ->assertSee('Contact details')->assertSee('Identity and academic details')->assertSee('View only')
+            ->assertSee('Save contact details')
+            ->assertDontSee('name="department"', false)
+            ->assertDontSee('name="course"', false)
+            ->assertDontSee('name="year"', false)
+            ->assertDontSee('name="section"', false);
     }
 
     public function test_registration_respects_activity_capacity(): void
@@ -197,6 +202,47 @@ class CfoWorkflowTest extends TestCase
         $this->assertDatabaseHas('notifications', ['user_id' => $student->id, 'message' => 'Your profile status is now Verified.']);
     }
 
+    public function test_only_staff_can_change_student_name_and_academic_details(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create(['name' => 'OLD NAME']);
+        $profile = DB::table('profiles')->insertGetId([
+            'user_id' => $student->id,
+            'department' => 'COLLEGE OF INFORMATION TECHNOLOGY',
+            'course' => 'Bachelor of Science in Information Technology',
+            'major' => null,
+            'year' => '3',
+            'section' => 'A',
+            'contact' => '09170000000',
+            'status' => 'Verified',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $changes = [
+            'name' => 'UPDATED NAME',
+            'department' => 'COLLEGE OF INFORMATION TECHNOLOGY',
+            'course' => 'Bachelor of Library and Information Science',
+            'major' => '',
+            'year' => '4',
+            'section' => 'B',
+            'email' => 'staff-cannot-change-this@example.test',
+            'contact' => 'staff-cannot-change-this',
+        ];
+
+        $this->actingAs($student)->patch("/profiles/{$profile}/details", $changes)->assertForbidden();
+        $this->actingAs($admin)->patch("/profiles/{$profile}/details", $changes)->assertSessionHas('success');
+
+        $this->assertDatabaseHas('users', ['id' => $student->id, 'name' => 'UPDATED NAME', 'email' => $student->email]);
+        $this->assertDatabaseHas('profiles', [
+            'id' => $profile,
+            'course' => 'Bachelor of Library and Information Science',
+            'year' => '4',
+            'section' => 'B',
+            'contact' => '09170000000',
+            'status' => 'Verified',
+        ]);
+    }
+
     public function test_account_update_returns_not_found_for_missing_user(): void
     {
         $superAdmin = User::factory()->create(['role' => 'super_admin']);
@@ -240,6 +286,7 @@ class CfoWorkflowTest extends TestCase
         $this->actingAs($student)->get('/dashboard/activities')
             ->assertOk()->assertSee('Upcoming activities')->assertSee('Places')
             ->assertSee('Second year recollection')->assertDontSee('Third year recollection');
+        $this->actingAs($student)->get("/activities/{$hidden}/register")->assertNotFound();
         $this->actingAs($student)->post("/activities/{$hidden}/register")->assertNotFound();
     }
 
@@ -272,18 +319,28 @@ class CfoWorkflowTest extends TestCase
         $student = User::factory()->create(['email' => 'forms@example.test']);
         $this->createProfile($student, 'BSIT', '3', 'A');
 
+        $activities = [];
         foreach (['Recollection', 'Retreat'] as $type) {
             $payload = $this->activityPayload("{$type} for BSIT 3A", $type, 'BSIT', '3', 'A');
             $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'preview']);
             $this->actingAs($admin)->post('/activities', [...$payload, 'intent' => 'create', 'target_confirmation' => session('activity_target_preview.token')]);
+            $activities[$type] = DB::table('activities')->where('title', "{$type} for BSIT 3A")->value('id');
         }
 
         $response = $this->actingAs($student)->get('/dashboard/activities');
         $response->assertOk()
-            ->assertSee('Recollection Form')->assertSee('Recollection Details')
-            ->assertSee('Retreat Form')->assertSee('Retreat Details')
-            ->assertSee('Upload Payment Receipt')
+            ->assertSee('Open registration')
+            ->assertDontSee('Upload Payment Receipt')
             ->assertDontSee('Type your full name as your signature');
+
+        foreach ($activities as $type => $activity) {
+            $this->actingAs($student)->get("/activities/{$activity}/register")
+                ->assertOk()
+                ->assertSee("{$type} details")
+                ->assertSee('Verified student information')
+                ->assertSee('Upload Payment Receipt')
+                ->assertDontSee('Type your full name as your signature');
+        }
         $this->assertDatabaseMissing('activity_form_fields', ['label' => 'Type your full name as your signature']);
     }
 

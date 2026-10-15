@@ -30,7 +30,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/{section}', [DashboardController::class, 'index'])->name('dashboard.section');
     Route::post('/profile', [WorkflowController::class, 'profile'])->name('profile.save');
     Route::patch('/profiles/{profile}', [WorkflowController::class, 'reviewProfile'])->name('profiles.review');
+    Route::patch('/profiles/{profile}/details', [WorkflowController::class, 'updateProfileDetails'])->name('profiles.details.update');
     Route::post('/activities', [WorkflowController::class, 'activity'])->name('activities.create');
+    Route::get('/activities/{activity}/register', [WorkflowController::class, 'registration'])->name('activities.registration');
     Route::post('/activities/{activity}/register', [WorkflowController::class, 'register'])->name('activities.register');
     Route::patch('/registrations/{registration}', [WorkflowController::class, 'reviewRegistration'])->name('registrations.review');
     Route::post('/registrations/{registration}/documents', [WorkflowController::class, 'upload'])->name('documents.upload');

@@ -203,6 +203,100 @@ class StudentAccountTest extends TestCase
         $this->post('/reset-password', ['token' => $token, 'password' => 'another-password123', 'password_confirmation' => 'another-password123'])->assertSessionHasErrors('token');
     }
 
+    public function test_student_can_update_contact_but_cannot_change_identity_or_academic_details(): void
+    {
+        $student = User::factory()->create(['name' => 'ORIGINAL NAME', 'email' => 'original@example.test']);
+        DB::table('profiles')->insert([
+            'user_id' => $student->id,
+            'department' => 'COLLEGE OF INFORMATION TECHNOLOGY',
+            'course' => 'Bachelor of Science in Information Technology',
+            'major' => null,
+            'year' => '3',
+            'section' => 'A',
+            'contact' => '09170000000',
+            'status' => 'Verified',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($student)->post('/profile', [
+            'email' => 'original@example.test',
+            'contact' => 'Messenger: Original Student',
+            'name' => 'STUDENT CHANGED NAME',
+            'department' => 'COLLEGE OF NURSING AND ALLIED HEALTH SCIENCES',
+            'course' => 'Bachelor of Science in Nursing',
+            'year' => '4',
+            'section' => 'Z',
+        ])->assertSessionHas('success', 'Contact details saved.');
+
+        $this->assertDatabaseHas('users', ['id' => $student->id, 'name' => 'ORIGINAL NAME']);
+        $this->assertDatabaseHas('profiles', [
+            'user_id' => $student->id,
+            'department' => 'COLLEGE OF INFORMATION TECHNOLOGY',
+            'course' => 'Bachelor of Science in Information Technology',
+            'year' => '3',
+            'section' => 'A',
+            'contact' => 'Messenger: Original Student',
+            'status' => 'Verified',
+        ]);
+    }
+
+    public function test_new_email_must_be_verified_before_it_becomes_the_login_email(): void
+    {
+        Notification::fake();
+        $student = User::factory()->create([
+            'email' => 'current@example.test',
+            'password' => 'password123',
+        ]);
+        DB::table('profiles')->insert([
+            'user_id' => $student->id,
+            'department' => 'COLLEGE OF INFORMATION TECHNOLOGY',
+            'course' => 'Bachelor of Science in Information Technology',
+            'major' => null,
+            'year' => '3',
+            'section' => 'A',
+            'contact' => '09170000000',
+            'status' => 'Verified',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $verificationUrl = null;
+        $this->actingAs($student)->post('/profile', [
+            'email' => 'New.Login@Example.test',
+            'contact' => '09171111111',
+        ])->assertSessionHas('success');
+        $student->refresh();
+        $this->assertSame('current@example.test', $student->email);
+        $this->assertSame('new.login@example.test', $student->pending_email);
+        $this->assertSame('new.login@example.test', $student->routeNotificationForMail());
+        $this->actingAs($student)->get('/dashboard/profile')
+            ->assertSee('Email verification pending')
+            ->assertSee('new.login@example.test')
+            ->assertSee('continue signing in with current@example.test');
+        $this->post('/register/student', $this->validRegistration([
+            'student_id' => '24-99999',
+            'email' => 'new.login@example.test',
+        ]))->assertSessionHasErrors('email');
+        Notification::assertSentTo($student, VerifyStudentEmail::class, function (VerifyStudentEmail $notification) use (&$verificationUrl) {
+            $verificationUrl = $notification->verificationUrl;
+
+            return $notification->emailChange;
+        });
+
+        $this->post('/logout');
+        $this->post('/login', ['login' => 'current@example.test', 'password' => 'password123'])->assertRedirect('/dashboard');
+        $this->post('/logout');
+        $this->post('/login', ['login' => 'new.login@example.test', 'password' => 'password123'])->assertSessionHasErrors('login');
+
+        $this->get(parse_url($verificationUrl, PHP_URL_PATH))->assertOk()->assertSee('Email address successfully verified');
+        $student->refresh();
+        $this->assertSame('new.login@example.test', $student->email);
+        $this->assertNull($student->pending_email);
+        $this->post('/login', ['login' => 'current@example.test', 'password' => 'password123'])->assertSessionHasErrors('login');
+        $this->post('/login', ['login' => 'NEW.LOGIN@EXAMPLE.TEST', 'password' => 'password123'])->assertRedirect('/dashboard');
+    }
+
     private function validRegistration(array $overrides = []): array
     {
         return array_merge([

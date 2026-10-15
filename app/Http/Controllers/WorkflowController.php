@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Services\StudentEmailVerificationService;
 use App\Support\FormationRegistrationFields;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -10,14 +12,68 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class WorkflowController extends Controller
 {
+    public function __construct(private StudentEmailVerificationService $emailVerification) {}
+
     public function profile(Request $request)
     {
         abort_unless($request->user()->role === 'student', 403);
         $request->merge([
+            'email' => Str::lower(trim((string) $request->input('email'))),
+            'contact' => trim((string) $request->input('contact')),
+        ]);
+        $student = $request->user();
+        $data = $request->validate([
+            'email' => ['required', 'email:rfc', 'max:255', function (string $attribute, mixed $value, \Closure $fail) use ($student) {
+                $email = Str::lower((string) $value);
+                $inUse = User::where('id', '!=', $student->id)
+                    ->where(function ($query) use ($email) {
+                        $query->whereRaw('LOWER(email) = ?', [$email])
+                            ->orWhereRaw('LOWER(pending_email) = ?', [$email]);
+                    })
+                    ->exists();
+                if ($inUse) {
+                    $fail('Another account already uses or is verifying this email address.');
+                }
+            }],
+            'contact' => ['required', 'string', 'max:150'],
+        ]);
+        $profileExists = DB::table('profiles')->where('user_id', $student->id)->exists();
+        if (! $profileExists) {
+            return back()->withErrors(['contact' => 'Your academic record must be set up by CFO Staff before contact details can be saved.']);
+        }
+
+        $emailChanged = $data['email'] !== Str::lower((string) $student->email);
+        DB::table('profiles')->where('user_id', $student->id)->update([
+            'contact' => $data['contact'],
+            'updated_at' => now(),
+        ]);
+        if ($emailChanged) {
+            $student->forceFill(['pending_email' => $data['email']])->save();
+            $this->emailVerification->send($student->fresh());
+        }
+        $this->audit($request, 'Updated own contact details', $student->university_id, $emailChanged ? 'Email verification requested' : null);
+
+        return back()->with('success', $emailChanged
+            ? "Contact details saved. Verify {$data['email']} before it becomes your sign-in email."
+            : 'Contact details saved.');
+    }
+
+    public function updateProfileDetails(Request $request, int $profile)
+    {
+        $this->staff($request);
+        $record = DB::table('profiles as p')
+            ->join('users as u', 'u.id', '=', 'p.user_id')
+            ->where('p.id', $profile)
+            ->where('u.role', 'student')
+            ->select('p.*', 'u.university_id')
+            ->first();
+        abort_unless($record, 404);
+
+        $request->merge([
+            'name' => preg_replace('/\s+/u', ' ', trim((string) $request->input('name'))),
             'department' => trim((string) $request->input('department')),
             'course' => trim((string) $request->input('course')),
             'major' => trim((string) $request->input('major')),
@@ -29,7 +85,7 @@ class WorkflowController extends Controller
         $course = $request->input('course');
         $majors = $catalog[$department][$course] ?? [];
         $data = $request->validate([
-            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($request->user()->id)],
+            'name' => ['required', 'string', 'max:255'],
             'department' => ['required', Rule::in(array_keys($catalog))],
             'course' => ['required', Rule::in(array_keys($catalog[$department] ?? []))],
             'major' => [Rule::requiredIf($majors !== []), 'nullable', 'string', 'max:150', function (string $attribute, mixed $value, \Closure $fail) use ($majors) {
@@ -41,24 +97,27 @@ class WorkflowController extends Controller
             }],
             'year' => ['required', 'regex:/^[1-9]$/'],
             'section' => ['required', 'regex:/^[A-Z]$/'],
-            'contact' => ['required', 'string', 'max:150'],
         ]);
         $data['major'] = $data['major'] ?: null;
-        if ($request->user()->email_verified_at && Str::lower(trim($data['email'])) !== Str::lower((string) $request->user()->email)) {
-            throw ValidationException::withMessages(['email' => 'A verified email address cannot be changed here. Contact the Christian Formation Office for assistance.']);
-        }
-        DB::table('users')->where('id', $request->user()->id)->update(['email' => $data['email'], 'updated_at' => now()]);
-        unset($data['email']);
-        $existing = DB::table('profiles')->where('user_id', $request->user()->id)->exists();
-        $values = [...$data, 'status' => 'Pending verification', 'note' => null, 'updated_at' => now()];
-        if ($existing) {
-            DB::table('profiles')->where('user_id', $request->user()->id)->update($values);
-        } else {
-            DB::table('profiles')->insert(['user_id' => $request->user()->id, ...$values, 'created_at' => now()]);
-        }
-        $this->audit($request, 'Submitted profile', $request->user()->university_id);
 
-        return back()->with('success', 'Profile submitted for verification.');
+        DB::transaction(function () use ($record, $data) {
+            DB::table('users')->where('id', $record->user_id)->update([
+                'name' => $data['name'],
+                'updated_at' => now(),
+            ]);
+            DB::table('profiles')->where('id', $record->id)->update([
+                'department' => $data['department'],
+                'course' => $data['course'],
+                'major' => $data['major'],
+                'year' => $data['year'],
+                'section' => $data['section'],
+                'updated_at' => now(),
+            ]);
+        });
+        $this->notify($record->user_id, 'CFO Staff updated your name or academic details.');
+        $this->audit($request, 'Updated student identity and academic details', $record->university_id);
+
+        return back()->with('success', 'Student identity and academic details updated.');
     }
 
     public function reviewProfile(Request $request, int $profile)
@@ -158,6 +217,42 @@ class WorkflowController extends Controller
         $this->audit($request, 'Created activity', (string) $id, $data['title']);
 
         return back()->with('success', 'Activity created.');
+    }
+
+    public function registration(Request $request, int $activity)
+    {
+        abort_unless($request->user()->role === 'student', 403);
+
+        $record = DB::table('activities')
+            ->where('id', $activity)
+            ->where('status', 'Published')
+            ->where('activity_date', '>=', now()->timezone('Asia/Manila')->toDateString())
+            ->first();
+        $profile = DB::table('profiles')->where('user_id', $request->user()->id)->first();
+        abort_unless($record && $this->studentCanAccessActivity($record, $profile), 404);
+
+        $fields = DB::table('activity_form_fields')->where('activity_id', $activity)->orderBy('sort_order')->get();
+        $requirements = DB::table('activity_requirements')->where('activity_id', $activity)->orderBy('sort_order')->get();
+        $existingRegistration = DB::table('registrations')
+            ->where('activity_id', $activity)
+            ->where('user_id', $request->user()->id)
+            ->where('status', '!=', 'Withdrawn')
+            ->first();
+        $registered = DB::table('registrations')
+            ->where('activity_id', $activity)
+            ->where('status', '!=', 'Withdrawn')
+            ->count();
+
+        return view('activity-registration', [
+            'activity' => $record,
+            'profile' => $profile,
+            'fields' => $fields,
+            'requirements' => $requirements,
+            'existingRegistration' => $existingRegistration,
+            'remaining' => max(0, $record->capacity - $registered),
+            'registrationOpen' => now()->timezone('Asia/Manila')->toDateString() <= $record->deadline && $registered < $record->capacity,
+            'formationForm' => $fields->whereNotNull('section_name')->isNotEmpty(),
+        ]);
     }
 
     public function register(Request $request, int $activity)
@@ -456,7 +551,10 @@ class WorkflowController extends Controller
     {
         abort_unless($request->user()->isSuperAdmin(), 403);
         $data = $request->validate(['name' => ['required', 'string', 'max:255'], 'university_id' => ['required', 'string', 'max:50', 'unique:users'], 'email' => ['nullable', 'email', 'max:255', function (string $attribute, mixed $value, \Closure $fail) {
-            if ($value && DB::table('users')->whereRaw('LOWER(email) = ?', [Str::lower(trim((string) $value))])->exists()) {
+            $email = Str::lower(trim((string) $value));
+            if ($value && DB::table('users')->where(fn ($query) => $query
+                ->whereRaw('LOWER(email) = ?', [$email])
+                ->orWhereRaw('LOWER(pending_email) = ?', [$email]))->exists()) {
                 $fail('An account already uses this email address.');
             }
         }], 'role' => ['required', Rule::in(['student', 'admin'])], 'password' => ['required', 'string', 'min:10', 'max:128']]);

@@ -31,13 +31,13 @@ class DashboardController extends Controller
 
         $data = [
             'section' => $section,
+            'academicCatalog' => config('student_registration.catalog', []),
             'activities' => $activities->get(),
             'announcements' => $announcements->get(),
             'notifications' => DB::table('notifications')->where('user_id', $user->id)->orderByDesc('created_at')->get(),
         ];
         if ($user->role === 'student') {
             $data['profile'] = $profile;
-            $data['academicCatalog'] = config('student_registration.catalog', []);
             $data['registrations'] = DB::table('registrations as r')->join('activities as a', 'a.id', '=', 'r.activity_id')->where('r.user_id', $user->id)->select('r.*', 'a.title', 'a.type as activity_type', 'a.activity_date', 'a.activity_time', 'a.venue')->orderByDesc('r.created_at')->get();
             $data['documents'] = DB::table('documents')->where('user_id', $user->id)->orderByDesc('created_at')->get();
             $data['requirementSubmissions'] = DB::table('requirement_submissions')->where('user_id', $user->id)->get();

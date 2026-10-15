@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Notifications\ResetStudentPassword;
-use App\Notifications\VerifyStudentEmail;
+use App\Services\StudentEmailVerificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class StudentAccountController extends Controller
 {
+    public function __construct(private StudentEmailVerificationService $emailVerification) {}
+
     public function create()
     {
         return view('auth.student-register', ['catalog' => $this->catalog()]);
@@ -35,7 +37,11 @@ class StudentAccountController extends Controller
         ]);
 
         $existingById = User::where('university_id', $request->input('student_id'))->first();
-        $existingByEmail = User::whereRaw('LOWER(email) = ?', [$request->input('email')])->first();
+        $existingByEmail = User::where(function ($query) use ($request) {
+            $email = $request->input('email');
+            $query->whereRaw('LOWER(email) = ?', [$email])
+                ->orWhereRaw('LOWER(pending_email) = ?', [$email]);
+        })->first();
         $pending = collect([$existingById, $existingByEmail])->filter()->first(fn (User $user) => $user->role === 'student' && ! $user->email_verified_at);
         if ($pending) {
             return back()->withInput($request->except(['password', 'password_confirmation']))
@@ -83,7 +89,10 @@ class StudentAccountController extends Controller
                 'regex:/^[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}$/i',
                 'max:255',
                 function (string $attribute, mixed $value, \Closure $fail) {
-                    if (User::whereRaw('LOWER(email) = ?', [Str::lower((string) $value)])->exists()) {
+                    $email = Str::lower((string) $value);
+                    if (User::where(fn ($query) => $query
+                        ->whereRaw('LOWER(email) = ?', [$email])
+                        ->orWhereRaw('LOWER(pending_email) = ?', [$email]))->exists()) {
                         $fail('An account already uses this email address.');
                     }
                 },
@@ -134,7 +143,7 @@ class StudentAccountController extends Controller
             return $user;
         });
 
-        $this->sendVerification($user);
+        $this->emailVerification->send($user);
 
         return redirect()->route('student.verification.pending')
             ->with('verification_email', $user->email)
@@ -157,8 +166,14 @@ class StudentAccountController extends Controller
             return back()->withInput()->withErrors(['email' => 'Please wait '.RateLimiter::availableIn($key).' seconds before requesting another verification email.']);
         }
 
-        $user = User::where('role', 'student')->whereRaw('LOWER(email) = ?', [$email])->first();
-        if ($user && ! $user->email_verified_at) {
+        $user = User::where('role', 'student')
+            ->where(function ($query) use ($email) {
+                $query->whereRaw('LOWER(email) = ?', [$email])
+                    ->orWhereRaw('LOWER(pending_email) = ?', [$email]);
+            })
+            ->first();
+        $canResend = $user && (! $user->email_verified_at || Str::lower((string) $user->pending_email) === $email);
+        if ($canResend) {
             $record = DB::table('student_email_verifications')->where('user_id', $user->id)->first();
             $cooldown = config('student_registration.resend_cooldown_seconds');
             if ($record && now()->diffInSeconds($record->last_sent_at, true) < $cooldown) {
@@ -166,11 +181,11 @@ class StudentAccountController extends Controller
 
                 return back()->withInput()->withErrors(['email' => "Please wait {$remaining} seconds before requesting another verification email."]);
             }
-            $this->sendVerification($user);
+            $this->emailVerification->send($user);
         }
         RateLimiter::hit($key, config('student_registration.resend_cooldown_seconds'));
 
-        return back()->with('verification_email', $email)->with('success', 'If a pending registration matches that email, a new verification message has been sent.');
+        return back()->with('verification_email', $email)->with('success', 'If that address is awaiting verification, a new verification message has been sent.');
     }
 
     public function verify(string $token)
@@ -178,19 +193,29 @@ class StudentAccountController extends Controller
         $result = DB::transaction(function () use ($token) {
             $record = DB::table('student_email_verifications')->where('token_hash', hash('sha256', $token))->lockForUpdate()->first();
             if (! $record || $record->used_at || now()->greaterThanOrEqualTo($record->expires_at)) {
-                return false;
+                return null;
             }
             $user = User::where('id', $record->user_id)->where('role', 'student')->lockForUpdate()->first();
-            if (! $user || $user->email_verified_at) {
-                return false;
+            if (! $user || ($user->email_verified_at && ! $user->pending_email)) {
+                return null;
             }
-            $user->forceFill(['email_verified_at' => now(), 'active' => true, 'student_account_status' => 'Active'])->save();
+            $emailChanged = filled($user->pending_email);
+            $user->forceFill([
+                'email' => $emailChanged ? $user->pending_email : $user->email,
+                'pending_email' => null,
+                'email_verified_at' => now(),
+                'active' => true,
+                'student_account_status' => 'Active',
+            ])->save();
             DB::table('student_email_verifications')->where('id', $record->id)->update(['used_at' => now(), 'updated_at' => now()]);
 
-            return true;
+            return $emailChanged ? 'email_changed' : 'registered';
         });
 
-        return view('auth.student-verification-result', ['verified' => $result]);
+        return view('auth.student-verification-result', [
+            'verified' => $result !== null,
+            'emailChanged' => $result === 'email_changed',
+        ]);
     }
 
     public function forgotPassword()
@@ -254,17 +279,6 @@ class StudentAccountController extends Controller
         }
 
         return redirect()->route('login')->with('success', 'Your password has been updated. You can now sign in.');
-    }
-
-    private function sendVerification(User $user): void
-    {
-        $token = Str::random(64);
-        $minutes = config('student_registration.verification_expire_minutes');
-        DB::table('student_email_verifications')->updateOrInsert(
-            ['user_id' => $user->id],
-            ['token_hash' => hash('sha256', $token), 'expires_at' => now()->addMinutes($minutes), 'last_sent_at' => now(), 'used_at' => null, 'created_at' => now(), 'updated_at' => now()]
-        );
-        $user->notify(new VerifyStudentEmail(route('student.verification.verify', $token), $minutes));
     }
 
     private function sendResetLink(User $user): void

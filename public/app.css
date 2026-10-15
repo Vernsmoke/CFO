@@ -636,6 +636,13 @@ textarea { min-height: 108px; resize: vertical; }
 .profile-form fieldset { margin: 0; padding: 27px 0; border: 0; border-bottom: 1px solid var(--line); }
 .profile-form legend { padding: 0; font-size: 1.08rem; font-weight: 800; }
 .profile-form fieldset > p { margin: 5px 0 18px; color: var(--muted); font-size: .86rem; }
+.profile-readonly-section { padding: 27px 0; border-bottom: 1px solid var(--line); }
+.profile-readonly-section h3 { margin: 0; font-size: 1.08rem; }
+.profile-readonly-section > p { margin: 5px 0 18px; color: var(--muted); font-size: .86rem; }
+.profile-readonly-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--line); }
+.profile-readonly-grid div { min-width: 0; padding: 14px 16px; background: var(--surface-soft); }
+.profile-readonly-grid dt { color: var(--muted); font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.profile-readonly-grid dd { margin: 4px 0 0; overflow-wrap: anywhere; font-size: .87rem; font-weight: 700; }
 .profile-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .profile-fields .field-wide { grid-column: 1 / -1; }
 .profile-fields label { font-size: .82rem; font-weight: 800; }
@@ -645,6 +652,13 @@ textarea { min-height: 108px; resize: vertical; }
 .profile-form footer strong { font-size: .84rem; }
 .profile-form footer span { margin-top: 3px; color: var(--muted); font-size: .78rem; }
 .profile-form footer .button { flex: 0 0 auto; }
+.profile-email-pending { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 24px; padding: 16px; border: 1px solid #e7cf82; border-radius: var(--radius-sm); background: #fff8df; }
+.profile-email-pending p { margin: 4px 0 0; font-size: .82rem; line-height: 1.5; }
+.staff-profile-editor { margin: 18px 0; border-block: 1px solid var(--line); }
+.staff-profile-editor summary { padding: 14px 0; cursor: pointer; font-weight: 800; }
+.staff-profile-editor .form-grid { padding: 4px 0 18px; }
+.staff-profile-actions { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.staff-profile-actions small { color: var(--muted); }
 .panel, .activity-card {
   margin-bottom: 20px;
   padding: 24px;
@@ -765,6 +779,47 @@ textarea { min-height: 108px; resize: vertical; }
 .student-activity-empty { padding: 42px 28px; text-align: center; }
 .student-activity-empty strong { display: block; font-size: 1.05rem; }
 .student-activity-empty p { margin: 6px 0 0; color: var(--muted); }
+.registration-page-shell { min-height: 100dvh; background: var(--canvas); }
+.registration-page-header { border-bottom: 1px solid var(--line); background: var(--surface); }
+.registration-page-header-inner { width: min(1180px, calc(100% - 48px)); min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-inline: auto; }
+.registration-brand { color: var(--night); }
+.registration-account { display: flex; align-items: center; gap: 24px; }
+.registration-account > span { display: grid; line-height: 1.25; text-align: right; }
+.registration-account strong { font-size: .82rem; }
+.registration-account small { color: var(--muted); font-size: .72rem; }
+.registration-account > a { color: var(--blue); font-size: .8rem; font-weight: 800; text-decoration: underline; text-decoration-color: rgba(0, 86, 179, .3); text-underline-offset: 4px; }
+.registration-account > a:hover { text-decoration-color: currentColor; }
+.registration-page { width: min(1180px, calc(100% - 48px)); margin-inline: auto; padding: 42px 0 72px; }
+.registration-page-grid { display: grid; grid-template-columns: minmax(280px, .42fr) minmax(0, 1fr); align-items: start; gap: clamp(28px, 5vw, 70px); }
+.registration-event-summary { position: sticky; top: 28px; }
+.registration-event-summary h1 { max-width: 13ch; margin: 0 0 18px; color: var(--night); font-size: clamp(2.25rem, 4.2vw, 3.7rem); letter-spacing: -.05em; }
+.registration-event-summary > p { max-width: 50ch; margin-bottom: 28px; color: var(--muted); line-height: 1.7; }
+.registration-event-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 22px; margin: 0; padding: 22px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.registration-event-meta dt { color: var(--muted); font-size: .68rem; font-weight: 800; text-transform: uppercase; }
+.registration-event-meta dd { margin: 3px 0 0; font-size: .88rem; font-weight: 750; }
+.registration-checklist { padding-top: 24px; }
+.registration-checklist h2 { margin-bottom: 8px; font-size: 1rem; }
+.registration-checklist p, .registration-checklist ul { color: var(--muted); font-size: .82rem; line-height: 1.55; }
+.registration-checklist ul { margin: 12px 0 0; padding-left: 18px; }
+.registration-checklist li + li { margin-top: 6px; }
+.registration-form-panel { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: 0 22px 55px rgba(17, 49, 99, .09); }
+.dedicated-registration-form { gap: 0; margin: 0; padding: clamp(24px, 4vw, 44px); border-top: 0; }
+.dedicated-registration-form .registration-heading { padding-bottom: 26px; }
+.dedicated-registration-form .registration-profile-snapshot { padding: 26px 0; }
+.dedicated-registration-form .registration-profile-snapshot h3 { margin: 0 0 14px; font-size: .92rem; }
+.dedicated-registration-form .registration-section { padding: 28px 0; }
+.dedicated-registration-form .registration-section:last-of-type { border-bottom: 0; }
+.dedicated-registration-form .registration-check { background: var(--surface-soft); }
+.dedicated-registration-form .receipt-section input[type="file"] { background: var(--surface-soft); }
+.required-file-list > div + div { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
+.field-error { display: block !important; margin-top: 7px !important; color: var(--danger) !important; font-size: .74rem !important; font-weight: 700 !important; }
+input.has-error, select.has-error, textarea.has-error { border-color: var(--danger); background: #fff8fa; }
+.registration-submit-bar { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding-top: 28px; }
+.registration-submit-bar p { margin: 0; color: var(--muted); font-size: .78rem; }
+.registration-complete-state { padding: clamp(32px, 6vw, 64px); }
+.registration-complete-state h2 { max-width: 13ch; margin: 18px 0 12px; font-size: clamp(2rem, 3.5vw, 3rem); }
+.registration-complete-state > p { max-width: 50ch; margin-bottom: 26px; color: var(--muted); }
+.registration-page-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .submission-answers { margin-top: 18px; padding: 16px; border-radius: var(--radius-sm); background: var(--surface-soft); }
 .submission-answers h3, .requirement-list > h3 { margin-bottom: 12px; }
 .submission-answers p { display: grid; gap: 3px; margin-bottom: 10px; }
@@ -913,6 +968,9 @@ code { padding: 2px 5px; border-radius: 4px; background: #e3edf6; color: var(--b
   .login-art { min-height: 440px; }
   .login-art::after { width: 150px; height: 150px; }
   .workspace-header .date { display: none; }
+  .registration-page-grid { grid-template-columns: 1fr; }
+  .registration-event-summary { position: static; }
+  .registration-event-summary h1 { max-width: 18ch; }
 }
 
 @media (max-width: 680px) {
@@ -969,8 +1027,10 @@ code { padding: 2px 5px; border-radius: 4px; background: #e3edf6; color: var(--b
   .profile-editor { padding: 22px 20px; }
   .profile-fields { grid-template-columns: 1fr; }
   .profile-fields .field-wide { grid-column: 1; }
+  .profile-readonly-grid { grid-template-columns: 1fr; }
   .profile-form footer { align-items: stretch; flex-direction: column; }
   .profile-form footer .button { width: 100%; }
+  .profile-email-pending, .staff-profile-actions { align-items: stretch; flex-direction: column; }
   .student-activity-intro { align-items: flex-start; flex-direction: column; }
   .student-activity-intro dl { width: 100%; }
   .student-activity-intro dl div { min-width: 0; }
@@ -1011,6 +1071,19 @@ code { padding: 2px 5px; border-radius: 4px; background: #e3edf6; color: var(--b
   .login-art h1 { font-size: 3.4rem; }
   .login-panel { padding: 36px 20px; }
   .registration-panel { padding-block: 36px; }
+  .registration-page-header-inner { width: min(100% - 28px, 1180px); min-height: 68px; }
+  .registration-brand span, .registration-account > span { display: none; }
+  .registration-account { gap: 0; }
+  .registration-page { width: min(100% - 28px, 1180px); padding: 28px 0 48px; }
+  .registration-page-grid { gap: 24px; }
+  .registration-event-summary h1 { max-width: none; font-size: 2.35rem; }
+  .registration-event-meta { grid-template-columns: 1fr; gap: 14px; }
+  .dedicated-registration-form { padding: 22px 18px; }
+  .registration-submit-bar { align-items: stretch; flex-direction: column; }
+  .registration-submit-bar .button { width: 100%; }
+  .registration-complete-state { padding: 30px 22px; }
+  .registration-page-actions { align-items: stretch; flex-direction: column; }
+  .registration-page-actions .button { width: 100%; }
   .student-account-fields { grid-template-columns: 1fr; }
   .student-account-fields .field-wide { grid-column: 1; }
   .policy-page article { padding: 28px 22px; }
