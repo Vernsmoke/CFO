@@ -16,6 +16,22 @@ class StudentAccountTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_seeded_demo_students_can_login_with_email(): void
+    {
+        $this->seed();
+
+        foreach (['alex@example.invalid', 'jamie@example.invalid'] as $email) {
+            $student = User::where('email', $email)->firstOrFail();
+
+            $this->post('/login', ['login' => $email, 'password' => 'ChangeMe123!'])
+                ->assertRedirect('/dashboard');
+            $this->assertAuthenticatedAs($student);
+
+            $this->post('/logout')->assertRedirect('/login');
+            $this->assertGuest();
+        }
+    }
+
     public function test_student_registration_is_available_from_public_pages(): void
     {
         $this->get('/')->assertOk()->assertSee('Create Student Account')->assertSee(route('student.register'));
