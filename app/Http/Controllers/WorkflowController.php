@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\StudentEmailVerificationService;
 use App\Support\FormationRegistrationFields;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -145,7 +146,8 @@ class WorkflowController extends Controller
             'description' => ['required', 'string', 'max:5000'],
             'activity_date' => ['required', 'date'],
             'activity_time' => ['required'],
-            'venue' => ['required', 'string', 'max:255'],
+            'activity_end_time' => ['required', 'date_format:H:i', 'after:activity_time'],
+            'venue' => ['required', Rule::in(config('cfo.venues', []))],
             'department' => ['required', 'string', 'max:150', 'not_in:All departments'],
             'target_year' => ['required', 'string', 'max:20'],
             'target_section' => ['required', 'string', 'max:50'],
@@ -156,27 +158,36 @@ class WorkflowController extends Controller
             'registration_questions' => ['nullable', 'string', 'max:5000'],
             'mass_reflection_required' => ['nullable', 'boolean'],
             'capacity' => ['required', 'integer', 'min:1', 'max:10000'],
-            'status' => ['required', Rule::in(['Draft', 'Published', 'Postponed', 'Cancelled', 'Archived'])],
+            'status' => ['required', Rule::in(['Draft', 'Pending approval', 'Published'])],
             'intent' => ['nullable', Rule::in(['preview', 'create'])],
             'target_confirmation' => ['nullable', 'string'],
         ]);
 
+        if (! $request->user()->isSuperAdmin() && $data['status'] === 'Published') {
+            return back()->withInput()->withErrors(['status' => 'CFO Staff must submit activities for Super Admin approval.']);
+        }
+
         $target = ['department' => $data['department'], 'year' => $data['target_year'], 'section' => $data['target_section']];
         $matchedStudents = $this->targetedStudents($target)->get(['u.id', 'u.name']);
+        $availability = $this->activityVenueAvailability($data['venue'], $data['activity_date'], $data['activity_time'], $data['activity_end_time']);
         if (($data['intent'] ?? null) === 'preview') {
             return back()->withInput()->with('activity_target_preview', [
                 ...$target,
                 'count' => $matchedStudents->count(),
+                'availability' => $availability,
                 'token' => Crypt::encryptString(json_encode([...$target, 'creator' => $request->user()->id, 'count' => $matchedStudents->count(), 'issued_at' => now()->timestamp])),
             ]);
         }
-        if ($data['status'] === 'Published') {
+        if (in_array($data['status'], ['Pending approval', 'Published'], true)) {
             $confirmed = $this->confirmedActivityTarget($data['target_confirmation'] ?? null, $request->user()->id, $matchedStudents->count());
             if ($confirmed !== $target) {
-                return back()->withInput()->withErrors(['target_confirmation' => 'Review the exact target group and matched student count before publishing.']);
+                return back()->withInput()->withErrors(['target_confirmation' => 'Review the exact target group, schedule, and venue availability before submitting.']);
             }
             if ($matchedStudents->isEmpty()) {
                 return back()->withInput()->withErrors(['department' => 'No active students match this exact course, year level, and section.']);
+            }
+            if ($availability['status'] === 'occupied') {
+                return back()->withInput()->withErrors(['venue' => $availability['message']]);
             }
         }
 
@@ -188,7 +199,12 @@ class WorkflowController extends Controller
             unset($data[$key]);
         }
         $id = DB::transaction(function () use ($request, $data, $documents, $questions, $standardFields, $massReflectionRequired) {
-            $id = DB::table('activities')->insertGetId([...$data, 'required_documents' => json_encode($documents), 'created_by' => $request->user()->id, 'created_at' => now(), 'updated_at' => now()]);
+            $approval = match ($data['status']) {
+                'Pending approval' => ['submitted_at' => now()],
+                'Published' => ['submitted_at' => now(), 'reviewed_by' => $request->user()->id, 'reviewed_at' => now()],
+                default => [],
+            };
+            $id = DB::table('activities')->insertGetId([...$data, ...$approval, 'required_documents' => json_encode($documents), 'created_by' => $request->user()->id, 'created_at' => now(), 'updated_at' => now()]);
             foreach ($standardFields as $order => $field) {
                 DB::table('activity_form_fields')->insert(['activity_id' => $id, 'label' => $field['label'], 'field_type' => $field['type'], 'options' => isset($field['options']) ? json_encode($field['options']) : null, 'section_name' => $field['section'], 'required' => $field['required'], 'sort_order' => $order, 'created_at' => now(), 'updated_at' => now()]);
             }
@@ -209,6 +225,11 @@ class WorkflowController extends Controller
 
             return $id;
         });
+        if ($data['status'] === 'Pending approval') {
+            foreach (DB::table('users')->where('role', 'super_admin')->where('active', true)->pluck('id') as $superAdminId) {
+                $this->notify($superAdminId, "{$request->user()->name} submitted an activity for approval: {$data['title']}.", 'activity', 'activities');
+            }
+        }
         if ($data['status'] === 'Published') {
             foreach ($matchedStudents as $student) {
                 $this->notify($student->id, "A new {$data['type']} activity was assigned to your class: {$data['title']}.", 'activity', 'activities');
@@ -216,7 +237,156 @@ class WorkflowController extends Controller
         }
         $this->audit($request, 'Created activity', (string) $id, $data['title']);
 
-        return back()->with('success', 'Activity created.');
+        return back()->with('success', $data['status'] === 'Pending approval' ? 'Activity submitted for Super Admin approval.' : 'Activity created.');
+    }
+
+    public function activityAvailability(Request $request)
+    {
+        $this->staff($request);
+        $data = $request->validate([
+            'venue' => ['required', Rule::in(config('cfo.venues', []))],
+            'activity_date' => ['required', 'date'],
+            'activity_time' => ['required', 'date_format:H:i'],
+            'activity_end_time' => ['required', 'date_format:H:i', 'after:activity_time'],
+        ]);
+
+        return response()->json($this->activityVenueAvailability(
+            $data['venue'],
+            $data['activity_date'],
+            $data['activity_time'],
+            $data['activity_end_time'],
+        ));
+    }
+
+    public function decideActivity(Request $request, int $activity)
+    {
+        abort_unless($request->user()->isSuperAdmin(), 403);
+        $data = $request->validate([
+            'decision' => ['required', Rule::in(['approve', 'changes_requested', 'reject'])],
+            'review_note' => ['nullable', 'string', 'max:2000', Rule::requiredIf(fn () => $request->input('decision') !== 'approve')],
+        ]);
+        $record = DB::table('activities')->find($activity);
+        abort_unless($record && $record->status === 'Pending approval', 404);
+
+        if ($data['decision'] === 'approve') {
+            $matchedStudents = $this->targetedStudents([
+                'department' => $record->department,
+                'year' => $record->target_year,
+                'section' => $record->target_section,
+            ])->get(['u.id']);
+            if ($matchedStudents->isEmpty()) {
+                return back()->withErrors(['activity' => 'This activity no longer matches any active students.']);
+            }
+            $availability = $this->activityVenueAvailability(
+                $record->venue,
+                $record->activity_date,
+                $record->activity_time,
+                $record->activity_end_time,
+                $record->id,
+            );
+            if ($availability['status'] === 'occupied') {
+                return back()->withErrors(['activity' => $availability['message']]);
+            }
+
+            DB::table('activities')->where('id', $activity)->update([
+                'status' => 'Published',
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+                'review_note' => $data['review_note'] ?? null,
+                'updated_at' => now(),
+            ]);
+            foreach ($matchedStudents as $student) {
+                $this->notify($student->id, "A new {$record->type} activity was assigned to your class: {$record->title}.", 'activity', 'activities');
+            }
+            $message = 'Activity approved and published.';
+            $status = 'Published';
+        } else {
+            $status = $data['decision'] === 'changes_requested' ? 'Changes requested' : 'Rejected';
+            DB::table('activities')->where('id', $activity)->update([
+                'status' => $status,
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+                'review_note' => $data['review_note'],
+                'updated_at' => now(),
+            ]);
+            $message = $status === 'Changes requested' ? 'Activity returned to CFO Staff.' : 'Activity rejected.';
+        }
+
+        if ($record->created_by !== $request->user()->id) {
+            $this->notify($record->created_by, "Your activity '{$record->title}' is now {$status}.", 'activity', 'activities');
+        }
+        $this->audit($request, 'Reviewed activity', (string) $activity, $status);
+
+        return back()->with('success', $message);
+    }
+
+    public function submitActivity(Request $request, int $activity)
+    {
+        $this->staff($request);
+        $record = DB::table('activities')->find($activity);
+        abort_unless($record && in_array($record->status, ['Draft', 'Changes requested'], true), 404);
+        abort_unless($request->user()->isSuperAdmin() || $record->created_by === $request->user()->id, 403);
+
+        $matchedStudents = $this->targetedStudents([
+            'department' => $record->department,
+            'year' => $record->target_year,
+            'section' => $record->target_section,
+        ])->count();
+        if (! $matchedStudents) {
+            return back()->withErrors(['activity' => 'This activity does not match any active students.']);
+        }
+        $availability = $this->activityVenueAvailability(
+            $record->venue,
+            $record->activity_date,
+            $record->activity_time,
+            $record->activity_end_time,
+            $record->id,
+        );
+        if ($availability['status'] === 'occupied') {
+            return back()->withErrors(['activity' => $availability['message']]);
+        }
+
+        DB::table('activities')->where('id', $activity)->update([
+            'status' => 'Pending approval',
+            'submitted_at' => now(),
+            'reviewed_by' => null,
+            'reviewed_at' => null,
+            'review_note' => null,
+            'updated_at' => now(),
+        ]);
+        foreach (DB::table('users')->where('role', 'super_admin')->where('active', true)->pluck('id') as $superAdminId) {
+            $this->notify($superAdminId, "{$request->user()->name} submitted an activity for approval: {$record->title}.", 'activity', 'activities');
+        }
+        $this->audit($request, 'Submitted activity for approval', (string) $activity, $record->title);
+
+        return back()->with('success', 'Activity submitted for Super Admin approval.');
+    }
+
+    public function updateActivity(Request $request, int $activity)
+    {
+        $this->staff($request);
+        $record = DB::table('activities')->find($activity);
+        abort_unless($record && in_array($record->status, ['Draft', 'Changes requested'], true), 404);
+        abort_unless($request->user()->isSuperAdmin() || $record->created_by === $request->user()->id, 403);
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string', 'max:5000'],
+            'activity_date' => ['required', 'date'],
+            'activity_time' => ['required', 'date_format:H:i'],
+            'activity_end_time' => ['required', 'date_format:H:i', 'after:activity_time'],
+            'venue' => ['required', Rule::in(config('cfo.venues', []))],
+            'department' => ['required', 'string', 'max:150', 'not_in:All departments'],
+            'target_year' => ['required', 'string', 'max:20'],
+            'target_section' => ['required', 'string', 'max:50'],
+            'participation_type' => ['required', Rule::in(['Required', 'Optional'])],
+            'deadline' => ['required', 'date', 'before_or_equal:activity_date'],
+            'requirements' => ['nullable', 'string', 'max:5000'],
+            'capacity' => ['required', 'integer', 'min:1', 'max:10000'],
+        ]);
+        DB::table('activities')->where('id', $activity)->update([...$data, 'updated_at' => now()]);
+        $this->audit($request, 'Updated activity draft', (string) $activity, $data['title']);
+
+        return back()->with('success', 'Activity changes saved. Review the schedule before submitting it for approval.');
     }
 
     public function registration(Request $request, int $activity)
@@ -475,35 +645,6 @@ class WorkflowController extends Controller
         return back()->with('success', 'Requirement review saved.');
     }
 
-    public function facility(Request $request)
-    {
-        $this->staff($request);
-        $data = $request->validate(['facility' => ['required', 'string', 'max:150'], 'purpose' => ['required', 'string', 'max:3000'], 'starts_at' => ['required', 'date'], 'ends_at' => ['required', 'date', 'after:starts_at'], 'participants' => ['required', 'integer', 'min:1', 'max:10000']]);
-        DB::table('facility_requests')->insert([...$data, 'user_id' => $request->user()->id, 'status' => 'Pending', 'created_at' => now(), 'updated_at' => now()]);
-        $this->audit($request, 'Requested facility', $data['facility']);
-
-        return back()->with('success', 'Facility request submitted.');
-    }
-
-    public function decideFacility(Request $request, int $facility)
-    {
-        $this->staff($request);
-        $data = $request->validate(['status' => ['required', Rule::in(['Approved', 'Rejected', 'Returned for correction'])], 'note' => ['nullable', 'string', 'max:2000']]);
-        $record = DB::table('facility_requests')->find($facility);
-        abort_unless($record, 404);
-        if ($data['status'] === 'Approved') {
-            $conflict = DB::table('facility_requests')->where('facility', $record->facility)->where('status', 'Approved')->where('id', '!=', $facility)->where('starts_at', '<', $record->ends_at)->where('ends_at', '>', $record->starts_at)->exists();
-            if ($conflict) {
-                return back()->withErrors(['facility' => 'This approved time overlaps another booking.']);
-            }
-        }
-        DB::table('facility_requests')->where('id', $facility)->update([...$data, 'updated_at' => now()]);
-        $this->notify($record->user_id, "Your {$record->facility} request is now {$data['status']}.", 'facility', 'facilities');
-        $this->audit($request, 'Reviewed facility request', (string) $facility, $data['status']);
-
-        return back()->with('success', 'Facility request updated.');
-    }
-
     public function announcement(Request $request)
     {
         $this->staff($request);
@@ -523,11 +664,50 @@ class WorkflowController extends Controller
         return back()->with('success', 'Announcement published.');
     }
 
+    public function archiveAnnouncement(Request $request, int $announcement)
+    {
+        $this->staff($request);
+        $data = $request->validate(['action' => ['required', Rule::in(['archive', 'restore'])]]);
+        $record = DB::table('announcements')->find($announcement);
+        abort_unless($record, 404);
+
+        $archivedAt = $data['action'] === 'archive' ? now() : null;
+        DB::table('announcements')->where('id', $announcement)->update([
+            'archived_at' => $archivedAt,
+            'updated_at' => now(),
+        ]);
+        $verb = $archivedAt ? 'Archived' : 'Restored';
+        $this->audit($request, "{$verb} announcement", (string) $announcement, $record->title);
+
+        return back()->with('success', "Announcement {$data['action']}d.");
+    }
+
     public function readNotifications(Request $request)
     {
-        DB::table('notifications')->where('user_id', $request->user()->id)->whereNull('read_at')->update(['read_at' => now(), 'updated_at' => now()]);
+        $data = $request->validate([
+            'scope' => ['nullable', Rule::in(['all', 'filtered'])],
+            'notification_state' => ['nullable', Rule::in(['all', 'unread', 'read'])],
+            'notification_category' => ['nullable', 'string', 'max:80'],
+            'notification_from' => ['nullable', 'date'],
+            'notification_to' => ['nullable', 'date', 'after_or_equal:notification_from'],
+            'notification_search' => ['nullable', 'string', 'max:150'],
+        ]);
 
-        return back()->with('success', 'Notifications marked as read.');
+        $query = DB::table('notifications')
+            ->where('user_id', $request->user()->id)
+            ->whereNull('read_at');
+        if (($data['scope'] ?? 'all') === 'filtered') {
+            $query
+                ->when($data['notification_category'] ?? null, fn ($builder, $category) => $builder->where('category', $category))
+                ->when($data['notification_from'] ?? null, fn ($builder, $from) => $builder->whereDate('created_at', '>=', $from))
+                ->when($data['notification_to'] ?? null, fn ($builder, $to) => $builder->whereDate('created_at', '<=', $to))
+                ->when($data['notification_search'] ?? null, function ($builder, $search) {
+                    $builder->whereRaw('LOWER(message) LIKE ?', ['%'.Str::lower(trim($search)).'%']);
+                });
+        }
+        $updated = $query->update(['read_at' => now(), 'updated_at' => now()]);
+
+        return back()->with('success', $updated.' notification'.($updated === 1 ? '' : 's').' marked as read.');
     }
 
     public function readNotification(Request $request, int $notification)
@@ -627,6 +807,54 @@ class WorkflowController extends Controller
             'department' => $target['department'] ?? null,
             'year' => $target['year'] ?? null,
             'section' => $target['section'] ?? null,
+        ];
+    }
+
+    private function activityVenueAvailability(string $venue, string $date, string $startTime, string $endTime, ?int $excludeActivityId = null): array
+    {
+        $normalizedVenue = Str::lower(trim($venue));
+        $start = Carbon::parse("{$date} {$startTime}");
+        $end = Carbon::parse("{$date} {$endTime}");
+
+        $activityConflicts = DB::table('activities')
+            ->whereRaw('LOWER(venue) = ?', [$normalizedVenue])
+            ->where('activity_date', $date)
+            ->where('activity_time', '<', $end->format('H:i:s'))
+            ->where('activity_end_time', '>', $start->format('H:i:s'))
+            ->when($excludeActivityId, fn ($query) => $query->where('id', '!=', $excludeActivityId));
+        $publishedActivities = (clone $activityConflicts)->where('status', 'Published')->count();
+        $pendingActivities = (clone $activityConflicts)->where('status', 'Pending approval')->count();
+
+        $facilityConflicts = DB::table('facility_requests')
+            ->whereRaw('LOWER(facility) = ?', [$normalizedVenue])
+            ->where('starts_at', '<', $end)
+            ->where('ends_at', '>', $start);
+        $approvedFacilities = (clone $facilityConflicts)->where('status', 'Approved')->count();
+        $hardConflicts = $publishedActivities + $approvedFacilities;
+        $pendingConflicts = $pendingActivities;
+
+        if ($hardConflicts > 0) {
+            return [
+                'status' => 'occupied',
+                'message' => "{$venue} is already occupied during this time.",
+                'confirmed_conflicts' => $hardConflicts,
+                'pending_conflicts' => $pendingConflicts,
+            ];
+        }
+        if ($pendingConflicts > 0) {
+            return [
+                'status' => 'warning',
+                'message' => "{$venue} has {$pendingConflicts} pending request that may conflict.",
+                'confirmed_conflicts' => 0,
+                'pending_conflicts' => $pendingConflicts,
+            ];
+        }
+
+        return [
+            'status' => 'available',
+            'message' => "{$venue} is available during this time.",
+            'confirmed_conflicts' => 0,
+            'pending_conflicts' => 0,
         ];
     }
 
